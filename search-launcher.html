@@ -313,6 +313,22 @@
       </button>
     </div>
 
+    <!-- Master trigger -->
+    <div style="padding: 0 12px 12px;">
+      <button id="master-btn" onclick="triggerAllSearches()" style="
+        width:100%; padding: 12px; font-size: 13px; font-weight: 700;
+        background: var(--blue); color: white; border: none; border-radius: var(--radius);
+        cursor: pointer; letter-spacing: 0.02em;">
+        ▶ Run All Searches
+      </button>
+      <button id="hits-only-btn" onclick="toggleHitsOnly()" style="
+        width:100%; margin-top:6px; padding: 8px; font-size: 12px; font-weight: 600;
+        background: white; color: var(--gray-600); border: 1px solid var(--gray-200);
+        border-radius: var(--radius); cursor: pointer;">
+        Show only with hits
+      </button>
+    </div>
+
     <div class="sidebar-bottom">
       <a href="pipeline-tracker.html">View full pipeline →</a>
     </div>
@@ -332,9 +348,10 @@
   const PIPELINE_KEY = "linkedin_pipeline_v1";
   const INTERVAL_MS  = 60 * 60 * 1000;
 
-  let currentTier   = "all";
-  let notifFired    = false;
-  let activeSearchId = null; // only one string active at a time
+  let currentTier    = "all";
+  let notifFired     = false;
+  let activeSearchId = null;
+  let hitsOnlyMode   = false;
 
   // ── Storage helpers ──────────────────────────────────────────────────────
   function loadState()  { try { return JSON.parse(localStorage.getItem(STORAGE_KEY))  || {}; } catch { return {}; } }
@@ -581,6 +598,54 @@
     if (form) form.classList.remove("visible");
   }
 
+  // ── Master: open all Tier 1 searches in sequence ─────────────────────────
+  function triggerAllSearches() {
+    const btn = document.getElementById("master-btn");
+    const tier1 = CONFIG.strings.filter(s => s.tier === 1);
+    let delay = 0;
+    tier1.forEach(s => {
+      setTimeout(() => {
+        window.open(encodeLinkedInURL(s.query), "_blank");
+        markRunSilent(s.id);
+      }, delay);
+      delay += 600; // stagger 600ms so browser doesn't block as popup
+    });
+    btn.textContent = `✓ ${tier1.length} searches opened`;
+    btn.style.background = "var(--green)";
+    setTimeout(() => {
+      btn.textContent = "▶ Run All Searches";
+      btn.style.background = "var(--blue)";
+      renderMain();
+      updateStats();
+    }, 3000);
+    resetTimer();
+  }
+
+  // markRun without UI side-effects (for batch open)
+  function markRunSilent(id) {
+    const state = loadState();
+    state[id] = { lastRun: Date.now() };
+    saveState(state);
+  }
+
+  // ── Hits-only filter ──────────────────────────────────────────────────────
+  function toggleHitsOnly() {
+    hitsOnlyMode = !hitsOnlyMode;
+    const btn = document.getElementById("hits-only-btn");
+    if (hitsOnlyMode) {
+      btn.textContent = "Show all strings";
+      btn.style.background = "var(--blue-light)";
+      btn.style.color = "var(--blue)";
+      btn.style.borderColor = "var(--blue)";
+    } else {
+      btn.textContent = "Show only with hits";
+      btn.style.background = "white";
+      btn.style.color = "var(--gray-600)";
+      btn.style.borderColor = "var(--gray-200)";
+    }
+    renderMain();
+  }
+
   // ── Filter ────────────────────────────────────────────────────────────────
   function filterTier(tier) {
     currentTier = tier;
@@ -602,15 +667,18 @@
     const main  = document.getElementById("main-content");
     main.innerHTML = "";
 
+    const allLeadsForFilter = loadLeads();
     const tierGroups = {};
     CONFIG.strings.forEach(s => {
       if (currentTier !== "all" && String(s.tier) !== currentTier) return;
+      if (hitsOnlyMode && !allLeadsForFilter.some(l => Number(l.stringId) === s.id)) return;
       if (!tierGroups[s.tier]) tierGroups[s.tier] = [];
       tierGroups[s.tier].push(s);
     });
 
     if (Object.keys(tierGroups).length === 0) {
-      main.innerHTML = '<div class="empty-section">No strings in this tier.</div>'; return;
+      main.innerHTML = `<div class="empty-section">${hitsOnlyMode ? "No strings have hits yet. Run searches and log hits first." : "No strings in this tier."}</div>`;
+      return;
     }
 
     Object.keys(tierGroups).sort().forEach(tierKey => {
