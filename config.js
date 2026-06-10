@@ -4,38 +4,38 @@ const CONFIG = {
     {
       id: 1,
       tier: 1,
-      label: "Hiring product designer (SaaS/fintech)",
-      query: '("hiring" OR "looking for") AND ("senior product designer" OR "lead product designer") AND ("SaaS" OR "fintech")',
+      label: "Looking for product designer",
+      query: '("looking for" OR "need" OR "hiring") AND ("product designer" OR "product design") AND ("startup" OR "SaaS" OR "fintech" OR "founder")',
     },
     {
       id: 2,
       tier: 1,
-      label: "Founder hiring first designer",
-      query: '"we\'re hiring" AND ("product designer" OR "UX designer") AND ("founding" OR "first design hire")',
+      label: "Looking for UX/UI designer",
+      query: '("looking for" OR "need" OR "hiring") AND ("UX designer" OR "UI designer" OR "UX/UI" OR "UI/UX") AND ("startup" OR "SaaS" OR "founder")',
     },
     {
       id: 3,
       tier: 1,
-      label: "Fresh funding announced",
-      query: '("raised our seed" OR "closed our Series A" OR "announcing our seed round") AND ("SaaS" OR "fintech" OR "B2B")',
+      label: "Looking for design agency",
+      query: '("looking for" OR "recommend" OR "anyone know") AND ("design agency" OR "UX agency" OR "branding agency" OR "creative agency") AND ("startup" OR "SaaS" OR "founder")',
     },
     {
       id: 4,
       tier: 1,
-      label: "Brand launch / rebrand revealed",
-      query: '("new brand" OR "rebranding" OR "brand refresh") AND ("startup" OR "SaaS" OR "fintech") AND ("launched" OR "just dropped" OR "revealed")',
+      label: "Looking for branding help",
+      query: '("looking for" OR "need help" OR "recommendations") AND ("branding" OR "brand identity" OR "logo" OR "visual identity") AND ("startup" OR "founder" OR "SaaS")',
     },
     {
       id: 5,
       tier: 1,
-      label: "New website just launched",
-      query: '("new website" OR "website redesign" OR "site is live") AND ("startup" OR "B2B") AND ("just launched" OR "went live" OR "shipped")',
+      label: "Looking for website design/dev",
+      query: '("looking for" OR "need" OR "recommendations") AND ("website design" OR "web design" OR "website redesign" OR "Webflow" OR "Framer") AND ("startup" OR "founder" OR "SaaS")',
     },
     {
       id: 6,
       tier: 1,
-      label: "Hiring brand/visual/web designer",
-      query: '("hiring" OR "looking for") AND ("brand designer" OR "visual designer" OR "web designer") AND ("startup" OR "SaaS")',
+      label: "Fresh funding announced",
+      query: '("raised our seed" OR "closed our Series A" OR "announcing our seed round") AND ("SaaS" OR "fintech" OR "B2B")',
     },
 
     // Tier 2 — Strong Signal
@@ -150,8 +150,8 @@ const CONFIG = {
   scoring: {
     hiringDesigner: {
       weight: 25,
-      keywords: ["hiring", "looking for", "we need a designer", "design hire", "first design hire"],
-      label: "Hiring designer / design role",
+      keywords: ["looking for", "need a designer", "hiring", "design hire", "first design hire", "ux designer", "ui designer", "product designer", "ux/ui", "ui/ux", "design agency", "branding agency", "creative agency", "website design", "web design"],
+      label: "Looking for designer / agency / design help",
     },
     fundingAnnounced: {
       weight: 20,
