@@ -1,37 +1,37 @@
 const CONFIG = {
   strings: [
     // Tier 1 — Hottest Intent
-    // Note: after opening in LinkedIn, manually set location filter to your target geos
-    // These strings use -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune to reduce noise
+    // -hiring -"job opening" -"apply now" -"we are hiring" excludes job posts
+    // -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune excludes Indian noise
     {
       id: 1,
       tier: 1,
-      label: "Looking for product designer (ex-India)",
-      query: '("looking for a product designer" OR "need a product designer" OR "hiring a product designer") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for product designer (ex-India, ex-jobs)",
+      query: '("looking for a product designer" OR "need a product designer" OR "recommend a product designer") -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 2,
       tier: 1,
-      label: "Looking for UX/UI designer (ex-India)",
-      query: '("looking for a UX designer" OR "need a UX designer" OR "looking for a UI designer" OR "hiring a UX designer") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for UX/UI designer (ex-India, ex-jobs)",
+      query: '("looking for a UX designer" OR "need a UX designer" OR "looking for a UI designer" OR "recommend a UX designer") -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 3,
       tier: 1,
-      label: "Looking for design agency (ex-India)",
-      query: '("looking for a design agency" OR "recommend a design agency" OR "anyone know a good design agency" OR "looking for a branding agency") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for design agency (ex-India, ex-jobs)",
+      query: '("looking for a design agency" OR "recommend a design agency" OR "anyone know a good design agency" OR "looking for a branding agency") -hiring -"job opening" -"apply now" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 4,
       tier: 1,
-      label: "Looking for branding help (ex-India)",
-      query: '("need help with branding" OR "looking for branding" OR "need a brand identity" OR "looking for logo design") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for branding help (ex-India, ex-jobs)",
+      query: '("need help with branding" OR "looking for branding" OR "need a brand identity" OR "looking for logo design") -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 5,
       tier: 1,
-      label: "Looking for website design/dev (ex-India)",
-      query: '("looking for website design" OR "need a website redesign" OR "looking for a Webflow designer" OR "need a web designer") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for website design/dev (ex-India, ex-jobs)",
+      query: '("looking for website design" OR "need a website redesign" OR "looking for a Webflow designer" OR "need a web designer") -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 6,
