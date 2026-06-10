@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Prospecting</title>
+  <script src="config.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #0077b5; --blue-dark: #005f8e; --blue-light: #e8f4fb;
+      --green: #1a7f37; --green-light: #ddf4e4;
+      --red: #cf222e; --red-light: #ffebe9;
+      --yellow: #9a6700; --yellow-light: #fff8c5;
+      --gray-50: #f6f8fa; --gray-100: #eaeef2; --gray-200: #d0d7de;
+      --gray-400: #8c959f; --gray-600: #57606a; --gray-900: #1f2328;
+      --radius: 8px; --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; background: var(--gray-50); color: var(--gray-900); min-height: 100vh; }
+
+    /* ── Top nav ── */
+    .topbar { background: white; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; padding: 0 24px; gap: 0; position: sticky; top: 0; z-index: 100; }
+    .topbar-brand { font-size: 14px; font-weight: 700; color: var(--blue); padding: 14px 20px 14px 0; border-right: 1px solid var(--gray-100); margin-right: 8px; white-space: nowrap; }
+    .tab-btn { padding: 14px 18px; font-size: 13px; font-weight: 500; color: var(--gray-600); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: color 0.1s; }
+    .tab-btn:hover { color: var(--gray-900); }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+    .tab-badge { display: inline-block; font-size: 10px; background: var(--gray-100); color: var(--gray-600); padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
+    .tab-btn.active .tab-badge { background: var(--blue-light); color: var(--blue); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .timer-pill { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 5px 12px; border-radius: 20px; background: var(--gray-100); color: var(--gray-900); border: 1px solid var(--gray-200); }
+    .timer-pill.urgent { background: var(--red-light); color: var(--red); border-color: var(--red); }
+    #topbar-notify { font-size: 11px; padding: 5px 10px; border: 1px solid var(--gray-200); border-radius: 5px; background: white; cursor: pointer; color: var(--gray-600); }
+    #topbar-notify.on { background: var(--green-light); border-color: var(--green); color: var(--green); }
+
+    /* ── Tab panels ── */
+    .tab-panel { display: none; padding: 24px; max-width: 1000px; }
+    .tab-panel.active { display: block; }
+
+    /* ── Shared components ── */
+    .panel-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .panel-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 20px; }
+    .card { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+    .btn-primary { padding: 8px 18px; font-size: 13px; font-weight: 600; background: var(--blue); color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-secondary { padding: 8px 14px; font-size: 12px; background: white; color: var(--gray-600); border: 1px solid var(--gray-200); border-radius: 6px; cursor: pointer; }
+    .btn-secondary:hover { background: var(--gray-50); }
+    .btn-green { background: var(--green); color: white; border: none; padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; }
+    .btn-green:hover { background: #166b2e; }
+    input, select, textarea { font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: 6px; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); }
+
+    /* ── Search tab ── */
+    .search-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .tier-filter { display: flex; gap: 4px; }
+    .tier-pill { padding: 5px 12px; font-size: 12px; border: 1px solid var(--gray-200); border-radius: 20px; background: white; cursor: pointer; color: var(--gray-600); }
+    .tier-pill.active { background: var(--blue); color: white; border-color: var(--blue); }
+    #master-run-btn { padding: 9px 20px; font-size: 13px; font-weight: 700; background: var(--blue); color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: auto; }
+    #master-run-btn:hover { background: var(--blue-dark); }
+    #master-run-btn.done { background: var(--green); }
+    #hits-only-toggle { padding: 6px 12px; font-size: 12px; border: 1px solid var(--gray-200); border-radius: 6px; background: white; cursor: pointer; color: var(--gray-600); }
+    #hits-only-toggle.on { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+
+    .string-card { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); margin-bottom: 5px; overflow: hidden; transition: border-color 0.1s; box-shadow: var(--shadow-sm); }
+    .string-card:hover { border-color: var(--blue); }
+    .string-card.is-done { border-left: 3px solid var(--green); opacity: 0.75; }
+    .string-card.is-overdue { border-left: 3px solid var(--red); }
+    .string-card.is-priority { border-left: 3px solid var(--blue); }
+    .string-card.inactive { opacity: 0.4; pointer-events: none; }
+    .string-card.active-search { border-color: var(--blue) !important; box-shadow: 0 0 0 2px rgba(0,119,181,0.15); }
+    .string-card.open .expand-icon { transform: rotate(90deg); }
+
+    .card-summary { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
+    .expand-icon { font-size: 9px; color: var(--gray-400); transition: transform 0.15s; flex-shrink: 0; }
+    .status-pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pip-idle { background: var(--gray-200); } .pip-done { background: var(--green); } .pip-overdue { background: var(--red); }
+    .card-num { font-size: 11px; color: var(--gray-400); min-width: 16px; }
+    .card-label { flex: 1; font-size: 13px; font-weight: 500; }
+    .card-hits { font-size: 11px; font-weight: 600; color: var(--blue); white-space: nowrap; }
+    .card-meta { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
+    .card-meta.overdue { color: var(--red); }
+    .open-btn { font-size: 12px; font-weight: 600; padding: 5px 14px; background: var(--blue); color: white; border-radius: 5px; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+    .open-btn:hover { background: var(--blue-dark); }
+    .open-btn.done { background: var(--green); }
+
+    .card-detail { display: none; border-top: 1px solid var(--gray-100); padding: 12px 14px; background: var(--gray-50); }
+    .string-card.open .card-detail { display: block; }
+    .detail-query { font-family: ui-monospace, monospace; font-size: 11px; color: var(--gray-600); background: white; border: 1px solid var(--gray-200); border-radius: 5px; padding: 8px 10px; word-break: break-all; line-height: 1.5; margin-bottom: 10px; }
+    .detail-hint { font-size: 11px; color: var(--gray-400); margin-bottom: 10px; }
+
+    .hits-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--gray-600); background: none; border: none; padding: 0; width: 100%; text-align: left; margin-bottom: 6px; }
+    .hits-toggle:hover { color: var(--blue); }
+    .hits-arrow { font-size: 9px; color: var(--gray-400); transition: transform 0.15s; }
+    .hits-toggle.open .hits-arrow { transform: rotate(90deg); }
+    .hits-count { font-size: 10px; padding: 1px 7px; border-radius: 10px; background: var(--blue); color: white; }
+    .hits-count.zero { background: var(--gray-200); color: var(--gray-600); }
+    .hits-list { display: none; }
+    .hits-list.open { display: block; }
+    .hit-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: white; border: 1px solid var(--gray-100); border-radius: 6px; margin-bottom: 3px; font-size: 12px; }
+    .hit-row .hit-title { flex: 1; font-weight: 500; }
+    .hit-score { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
+    .hit-score.q { background: var(--green-light); color: var(--green); }
+    .hit-score.nq { background: var(--red-light); color: var(--red); }
+    .hit-status { font-size: 10px; color: var(--gray-400); background: var(--gray-100); padding: 2px 6px; border-radius: 8px; }
+    .hit-link { font-size: 11px; color: var(--blue); text-decoration: none; }
+    .hit-link:hover { text-decoration: underline; }
+    .hit-date { font-size: 10px; color: var(--gray-400); white-space: nowrap; }
+    .hits-empty { font-size: 11px; color: var(--gray-400); padding: 4px 0; }
+
+    .log-form { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gray-200); }
+    .log-form.visible { display: block; }
+    .log-form-title { font-size: 11px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .log-inputs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .log-inputs input { padding: 6px 9px; font-size: 12px; }
+    .inp-url { flex: 2; min-width: 180px; }
+    .inp-title { flex: 1; min-width: 130px; }
+    .inp-score { width: 68px; }
+    .log-btns { display: flex; gap: 6px; margin-top: 6px; }
+    .log-btns button { font-size: 12px; font-weight: 600; padding: 6px 14px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-log { background: var(--green); color: white; }
+    .btn-log:hover { background: #166b2e; }
+    .btn-skip-sm { background: var(--gray-100); color: var(--gray-600); }
+    .btn-skip-sm:hover { background: var(--gray-200); }
+    .log-confirm { font-size: 11px; color: var(--green); margin-top: 4px; display: none; }
+
+    .section-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; margin-top: 20px; }
+    .section-hdr:first-child { margin-top: 0; }
+    .section-title { font-size: 13px; font-weight: 700; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.06em; }
+    .section-tag { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 10px; }
+    .tag-red { background: var(--red-light); color: var(--red); }
+    .tag-yellow { background: var(--yellow-light); color: var(--yellow); }
+    .tag-blue { background: var(--blue-light); color: var(--blue); }
+    .tag-gray { background: var(--gray-100); color: var(--gray-600); }
+    .section-prog { margin-left: auto; font-size: 11px; color: var(--gray-400); }
+    .empty-state { text-align: center; padding: 40px; color: var(--gray-400); font-size: 13px; }
+
+    /* ── Scorer tab ── */
+    .scorer-wrap { max-width: 620px; }
+    .scorer-wrap textarea { width: 100%; height: 150px; resize: vertical; display: block; margin-bottom: 10px; }
+    .scorer-btns { display: flex; gap: 8px; margin-bottom: 20px; }
+    .score-result { display: none; }
+    .score-box { padding: 20px; border-radius: var(--radius); margin-bottom: 14px; text-align: center; }
+    .score-box.qualified { background: var(--green-light); border: 2px solid var(--green); }
+    .score-box.skip { background: var(--red-light); border: 2px solid var(--red); }
+    .score-num { font-size: 48px; font-weight: 800; }
+    .score-box.qualified .score-num { color: var(--green); }
+    .score-box.skip .score-num { color: var(--red); }
+    .score-verdict { font-size: 15px; font-weight: 600; margin-top: 4px; }
+    .score-box.qualified .score-verdict { color: var(--green); }
+    .score-box.skip .score-verdict { color: var(--red); }
+    .breakdown-card { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; }
+    .breakdown-hdr { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); padding: 9px 14px; border-bottom: 1px solid var(--gray-100); }
+    .sig-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--gray-50); }
+    .sig-row:last-child { border-bottom: none; }
+    .sig-row.fired { background: var(--blue-light); }
+    .sig-label { font-size: 13px; }
+    .sig-row:not(.fired) .sig-label { color: var(--gray-200); }
+    .sig-weight { font-size: 13px; font-weight: 600; }
+    .sig-row.fired .sig-weight { color: var(--blue); }
+    .sig-row:not(.fired) .sig-weight { color: var(--gray-200); }
+    .score-log-hint { font-size: 12px; color: var(--gray-400); margin-top: 12px; text-align: center; }
+    .score-log-hint button { font-size: 12px; color: var(--blue); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+    /* ── Pipeline tab ── */
+    .pipeline-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .pipeline-toolbar .view-pills { display: flex; gap: 4px; }
+    .view-pill { padding: 5px 14px; font-size: 12px; border: 1px solid var(--gray-200); border-radius: 20px; background: white; cursor: pointer; color: var(--gray-600); }
+    .view-pill.active { background: var(--blue); color: white; border-color: var(--blue); }
+    .add-lead-form { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+    .add-field { display: flex; flex-direction: column; gap: 3px; }
+    .add-field label { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; }
+    .add-field select, .add-field input { min-width: 120px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--gray-200); }
+    th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); border-bottom: 1px solid var(--gray-200); background: var(--gray-50); }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--gray-50); }
+    .score-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 11px; }
+    .score-badge.qualified { background: var(--green-light); color: var(--green); }
+    .score-badge.skip { background: var(--red-light); color: var(--red); }
+    select.status-sel { font-size: 12px; padding: 3px 6px; border: 1px solid var(--gray-200); border-radius: 4px; background: white; cursor: pointer; }
+    .del-btn { background: none; border: none; cursor: pointer; color: var(--gray-200); font-size: 16px; padding: 2px 6px; }
+    .del-btn:hover { color: var(--red); }
+    .url-link { color: var(--blue); text-decoration: none; font-size: 12px; }
+    .url-link:hover { text-decoration: underline; }
+    .kill-flag { font-size: 11px; font-weight: 700; color: var(--red); background: var(--red-light); padding: 2px 8px; border-radius: 10px; }
+    .ok-flag { font-size: 11px; font-weight: 700; color: var(--green); background: var(--green-light); padding: 2px 8px; border-radius: 10px; }
+    .empty { text-align: center; padding: 40px; color: var(--gray-400); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Top navigation ── -->
+<nav class="topbar">
+  <div class="topbar-brand">LinkedIn Prospecting</div>
+  <button class="tab-btn active" onclick="switchTab('search')">Search <span id="badge-search" class="tab-badge">0/23</span></button>
+  <button class="tab-btn" onclick="switchTab('scorer')">Score Post</button>
+  <button class="tab-btn" onclick="switchTab('pipeline')">Pipeline <span id="badge-pipeline" class="tab-badge">0</span></button>
+  <button class="tab-btn" onclick="switchTab('review')">Weekly Review</button>
+  <div class="topbar-right">
+    <span id="timer-pill" class="timer-pill">60:00</span>
+    <button id="topbar-notify" onclick="toggleNotif()">🔔 Alerts</button>
+  </div>
+</nav>
+
+<!-- ── Search tab ── -->
+<div id="tab-search" class="tab-panel active">
+  <div class="search-toolbar">
+    <div class="tier-filter">
+      <button class="tier-pill active" onclick="filterTier('all')">All</button>
+      <button class="tier-pill" onclick="filterTier('1')">T1 Hottest</button>
+      <button class="tier-pill" onclick="filterTier('2')">T2 Signal</button>
+      <button class="tier-pill" onclick="filterTier('3')">T3 Geo</button>
+      <button class="tier-pill" onclick="filterTier('4')">T4 Weekly</button>
+    </div>
+    <button id="hits-only-toggle" onclick="toggleHitsOnly()">With hits only</button>
+    <button id="master-run-btn" onclick="triggerAllSearches()">▶ Run All Tier 1</button>
+  </div>
+  <div id="search-content"></div>
+</div>
+
+<!-- ── Scorer tab ── -->
+<div id="tab-scorer" class="tab-panel">
+  <div class="scorer-wrap">
+    <p class="panel-sub">Paste a LinkedIn post → instant ICP score</p>
+    <textarea id="post-input" placeholder="Paste LinkedIn post text here..."></textarea>
+    <div class="scorer-btns">
+      <button class="btn-primary" onclick="scorePost()">Score Post</button>
+      <button class="btn-secondary" onclick="clearScore()">Clear</button>
+    </div>
+    <div id="score-result" class="score-result">
+      <div id="score-box" class="score-box">
+        <div id="score-num" class="score-num"></div>
+        <div id="score-verdict" class="score-verdict"></div>
+      </div>
+      <div class="breakdown-card">
+        <div class="breakdown-hdr">Signal Breakdown</div>
+        <div id="breakdown-rows"></div>
+      </div>
+      <p class="score-log-hint">Qualified? <button onclick="switchTab('pipeline')">Log it in Pipeline →</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Pipeline tab ── -->
+<div id="tab-pipeline" class="tab-panel">
+  <div class="add-lead-form">
+    <div class="add-field"><label>String</label><select id="new-string-id"></select></div>
+    <div class="add-field"><label>Post URL</label><input id="new-url" type="url" placeholder="https://linkedin.com/..." style="min-width:200px" /></div>
+    <div class="add-field"><label>Poster Title</label><input id="new-title" type="text" placeholder="Founder @ Acme" /></div>
+    <div class="add-field"><label>ICP Score</label><input id="new-score" type="number" min="0" max="100" placeholder="0–100" style="width:80px" /></div>
+    <button class="btn-primary" onclick="addLead()" style="align-self:flex-end">+ Add</button>
+  </div>
+  <div class="pipeline-toolbar">
+    <div class="view-pills">
+      <button class="view-pill active" id="pill-pipeline" onclick="showPipelineView('pipeline')">All leads</button>
+      <button class="view-pill" id="pill-active" onclick="showPipelineView('active')">Active</button>
+      <button class="view-pill" id="pill-qualified" onclick="showPipelineView('qualified')">Qualified</button>
+    </div>
+    <button class="btn-secondary" style="margin-left:auto" onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div id="pipeline-view"></div>
+</div>
+
+<!-- ── Review tab ── -->
+<div id="tab-review" class="tab-panel">
+  <p class="panel-sub">Per-string performance. Kill strings with &lt;60% ICP at day 5.</p>
+  <div id="review-view"></div>
+</div>
+
+<script>
+  // ── Storage ──────────────────────────────────────────────────────────────
+  const PIPELINE_KEY = "linkedin_pipeline_v1";
+  const LAUNCHER_KEY = "li_launcher_v1";
+  const TIMER_KEY    = "li_timer_v1";
+  const SWEEP_KEY    = "li_sweeps_v1";
+  const INTERVAL_MS  = 60 * 60 * 1000;
+
+  const load  = k => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; } };
+  const loadA = k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } };
+  const save  = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+  const loadLeads  = () => loadA(PIPELINE_KEY);
+  const saveLeads  = l => save(PIPELINE_KEY, l);
+  const loadState  = () => load(LAUNCHER_KEY);
+  const saveState  = s => save(LAUNCHER_KEY, s);
+  const loadTimer  = () => load(TIMER_KEY);
+  const saveTimer  = t => save(TIMER_KEY, t);
+  const loadSweeps = () => load(SWEEP_KEY);
+  const saveSweeps = s => save(SWEEP_KEY, s);
+  const todayStr   = () => new Date().toISOString().slice(0, 10);
+  const formatAge  = ms => { if (ms < 60000) return "just now"; const m = Math.floor(ms/60000); return m < 60 ? `${m}m ago` : `${Math.floor(m/60)}h ago`; };
+  const liURL      = q => "https://www.linkedin.com/search/results/content/?keywords=" + encodeURIComponent(q) + "&sortBy=date_posted";
+
+  // ── Tab switching ─────────────────────────────────────────────────────────
+  let activeTab = "search";
+  function switchTab(name) {
+    activeTab = name;
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById("tab-" + name).classList.add("active");
+    document.querySelectorAll(".tab-btn").forEach(b => { if (b.getAttribute("onclick").includes(`'${name}'`)) b.classList.add("active"); });
+    if (name === "pipeline") renderPipeline();
+    if (name === "review")   renderReview();
+    updateBadges();
+  }
+
+  function updateBadges() {
+    const state = loadState(); const now = Date.now();
+    const done = CONFIG.strings.filter(s => state[s.id] && (now - state[s.id].lastRun) < INTERVAL_MS).length;
+    document.getElementById("badge-search").textContent = `${done}/23`;
+    document.getElementById("badge-pipeline").textContent = loadLeads().length;
+  }
+
+  // ── Timer ─────────────────────────────────────────────────────────────────
+  let notifFired = false;
+  function resetTimer() {
+    const t = loadTimer(); t.start = Date.now(); saveTimer(t); notifFired = false;
+    const sw = loadSweeps();
+    if (sw.date !== todayStr()) { sw.today = 0; sw.date = todayStr(); }
+    sw.today++; saveSweeps(sw);
+  }
+  function tickTimer() {
+    const t = loadTimer(); const pill = document.getElementById("timer-pill");
+    if (!t.start) { pill.textContent = "60:00"; pill.className = "timer-pill"; return; }
+    const remaining = Math.max(0, INTERVAL_MS - (Date.now() - t.start));
+    const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000);
+    pill.textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    pill.className = remaining < 5 * 60 * 1000 ? "timer-pill urgent" : "timer-pill";
+    if (remaining === 0 && !notifFired) { fireNotif(); notifFired = true; }
+  }
+  function fireNotif() { if (Notification.permission === "granted") new Notification("LinkedIn Sweep Due", { body: "60 min — time to scan Tier 1" }); }
+  function toggleNotif() {
+    const btn = document.getElementById("topbar-notify");
+    if (Notification.permission === "granted") { btn.textContent = "🔔 ON"; btn.className = "on"; return; }
+    Notification.requestPermission().then(p => { if (p === "granted") { btn.textContent = "🔔 ON"; btn.className = "on"; } });
+  }
+  function initNotif() { if (Notification.permission === "granted") { document.getElementById("topbar-notify").textContent = "🔔 ON"; document.getElementById("topbar-notify").className = "on"; } }
+
+  // ── Search tab ────────────────────────────────────────────────────────────
+  let currentTier = "all", hitsOnly = false, activeSearchId = null;
+
+  const TIER_TAGS = {
+    1: { cls: "tag-red",    label: "Act within 2hrs" },
+    2: { cls: "tag-yellow", label: "Offer teardown" },
+    3: { cls: "tag-blue",   label: "Act within 2hrs" },
+    4: { cls: "tag-gray",   label: "Monitor weekly" },
+  };
+
+  function filterTier(tier) {
+    currentTier = tier;
+    document.querySelectorAll(".tier-pill").forEach(p => p.classList.toggle("active", p.textContent.startsWith(tier === "all" ? "All" : "T" + tier)));
+    renderSearch();
+  }
+
+  function toggleHitsOnly() {
+    hitsOnly = !hitsOnly;
+    const btn = document.getElementById("hits-only-toggle");
+    btn.classList.toggle("on", hitsOnly);
+    renderSearch();
+  }
+
+  function triggerAllSearches() {
+    const btn = document.getElementById("master-run-btn");
+    const tier1 = CONFIG.strings.filter(s => s.tier === 1);
+    let delay = 0;
+    tier1.forEach(s => {
+      setTimeout(() => { window.open(liURL(s.query), "_blank"); markRunSilent(s.id); }, delay);
+      delay += 600;
+    });
+    resetTimer();
+    btn.textContent = `✓ ${tier1.length} opened`; btn.className = "done";
+    setTimeout(() => { btn.textContent = "▶ Run All Tier 1"; btn.className = ""; renderSearch(); updateBadges(); }, 3000);
+  }
+
+  function markRunSilent(id) { const s = loadState(); s[id] = { lastRun: Date.now() }; saveState(s); }
+
+  function markRun(id) {
+    markRunSilent(id); resetTimer();
+    activeSearchId = id;
+    document.querySelectorAll(".string-card").forEach(c => {
+      const cid = Number(c.id.replace("card-", ""));
+      c.classList.toggle("inactive", cid !== id);
+      c.classList.toggle("active-search", cid === id);
+      if (cid === id) c.classList.add("open");
+    });
+    const form = document.getElementById("lf-" + id);
+    if (form) form.classList.add("visible");
+    updateBadges();
+  }
+
+  function stopSearch() { activeSearchId = null; renderSearch(); }
+
+  function toggleCard(id) { document.getElementById("card-" + id)?.classList.toggle("open"); }
+
+  function toggleHits(id) {
+    document.getElementById("ht-" + id)?.classList.toggle("open");
+    document.getElementById("hl-" + id)?.classList.toggle("open");
+  }
+
+  function logHit(id) {
+    const url = document.getElementById("lu-" + id).value.trim();
+    const title = document.getElementById("lt-" + id).value.trim();
+    const score = document.getElementById("ls-" + id).value.trim();
+    if (!url && !title) return;
+    const leads = loadLeads();
+    leads.unshift({ stringId: id, url, posterTitle: title, score: score || "0", status: "hit", date: todayStr() });
+    saveLeads(leads);
+    document.getElementById("lu-" + id).value = "";
+    document.getElementById("lt-" + id).value = "";
+    document.getElementById("ls-" + id).value = "";
+    const conf = document.getElementById("lc-" + id);
+    if (conf) { conf.style.display = "block"; setTimeout(() => conf.style.display = "none", 2500); }
+    refreshHits(id); updateBadges();
+  }
+
+  function skipLog(id) { document.getElementById("lf-" + id)?.classList.remove("visible"); }
+
+  function refreshHits(id) {
+    const hits = loadLeads().filter(l => Number(l.stringId) === id);
+    const toggle = document.getElementById("ht-" + id);
+    const list   = document.getElementById("hl-" + id);
+    if (!toggle || !list) return;
+    const badge = toggle.querySelector(".hits-count");
+    if (badge) { badge.textContent = hits.length; badge.className = "hits-count" + (hits.length > 0 ? "" : " zero"); }
+    list.innerHTML = hits.length === 0 ? `<div class="hits-empty">No hits yet.</div>` : hits.map(l => {
+      const sc = Number(l.score); const scCls = sc >= CONFIG.qualifiedThreshold ? "q" : "nq";
+      return `<div class="hit-row">
+        <span class="hit-title">${l.posterTitle || "Unknown"}</span>
+        <span class="hit-score ${scCls}">${l.score}</span>
+        <span class="hit-status">${l.status}</span>
+        ${l.url ? `<a class="hit-link" href="${l.url}" target="_blank" rel="noopener">View ↗</a>` : ""}
+        <span class="hit-date">${l.date}</span>
+      </div>`;
+    }).join("");
+    list.classList.add("open"); toggle.classList.add("open");
+  }
+
+  function renderSearch() {
+    const state = loadState(); const now = Date.now(); const allLeads = loadLeads();
+    const content = document.getElementById("search-content"); content.innerHTML = "";
+    const tierGroups = {};
+    CONFIG.strings.forEach(s => {
+      if (currentTier !== "all" && String(s.tier) !== currentTier) return;
+      if (hitsOnly && !allLeads.some(l => Number(l.stringId) === s.id)) return;
+      if (!tierGroups[s.tier]) tierGroups[s.tier] = [];
+      tierGroups[s.tier].push(s);
+    });
+    if (!Object.keys(tierGroups).length) {
+      content.innerHTML = `<div class="empty-state">${hitsOnly ? "No strings have hits yet." : "No strings."}</div>`; return;
+    }
+    Object.keys(tierGroups).sort().forEach(tk => {
+      const tier = Number(tk), t = CONFIG.tiers[tier], tag = TIER_TAGS[tier];
+      const strings = tierGroups[tk];
+      const doneCount = strings.filter(s => state[s.id] && (now - state[s.id].lastRun) < INTERVAL_MS).length;
+      const sec = document.createElement("div");
+      sec.innerHTML = `<div class="section-hdr"><span class="section-title">${t.label}</span><span class="section-tag ${tag.cls}">${tag.label}</span><span class="section-prog">${doneCount}/${strings.length}</span></div>`;
+      const list = document.createElement("div");
+      strings.forEach(s => {
+        const entry = state[s.id]; const age = entry ? now - entry.lastRun : null;
+        const isFresh = age !== null && age < INTERVAL_MS;
+        const isOverdue = age !== null && age >= INTERVAL_MS;
+        const isPrio = tier === 1 || tier === 3;
+        const hits = allLeads.filter(l => Number(l.stringId) === s.id);
+        const cardCls = "string-card" + (isFresh ? " is-done" : isOverdue ? " is-overdue" : isPrio ? " is-priority" : "");
+        const pipCls = isFresh ? "pip-done" : isOverdue ? "pip-overdue" : "pip-idle";
+        const metaText = age !== null ? formatAge(age) : "Never";
+        const metaCls = "card-meta" + (isOverdue ? " overdue" : "");
+        const hitsHtml = hits.length === 0 ? `<div class="hits-empty">No hits yet.</div>` : hits.map(l => {
+          const sc = Number(l.score); const scCls = sc >= CONFIG.qualifiedThreshold ? "q" : "nq";
+          return `<div class="hit-row"><span class="hit-title">${l.posterTitle || "Unknown"}</span><span class="hit-score ${scCls}">${l.score}</span><span class="hit-status">${l.status}</span>${l.url ? `<a class="hit-link" href="${l.url}" target="_blank" rel="noopener">View ↗</a>` : ""}<span class="hit-date">${l.date}</span></div>`;
+        }).join("");
+        const card = document.createElement("div");
+        card.className = cardCls; card.id = "card-" + s.id;
+        card.innerHTML = `
+          <div class="card-summary" onclick="toggleCard(${s.id})">
+            <span class="expand-icon">▶</span>
+            <span class="status-pip ${pipCls}"></span>
+            <span class="card-num">${s.id}</span>
+            <span class="card-label">${s.label}</span>
+            ${hits.length > 0 ? `<span class="card-hits">${hits.length} hit${hits.length > 1 ? "s" : ""}</span>` : ""}
+            <span class="${metaCls}">${metaText}</span>
+            <a class="open-btn${isFresh ? " done" : ""}" href="${liURL(s.query)}" target="_blank" rel="noopener" onclick="event.stopPropagation();markRun(${s.id})">${isFresh ? "Re-run ↗" : "Open ↗"}</a>
+          </div>
+          <div class="card-detail">
+            <div class="detail-query">${s.query}</div>
+            <div class="detail-hint">LinkedIn → Posts → sort Latest.${isPrio ? " Respond within 2hrs." : ""} <button class="btn-skip-sm" style="float:right" onclick="stopSearch()">✕ Stop</button></div>
+            <button class="hits-toggle" id="ht-${s.id}" onclick="toggleHits(${s.id})">
+              <span class="hits-arrow">▶</span> Hits from this string
+              <span class="hits-count${hits.length > 0 ? "" : " zero"}">${hits.length}</span>
+            </button>
+            <div class="hits-list" id="hl-${s.id}">${hitsHtml}</div>
+            <div class="log-form" id="lf-${s.id}">
+              <div class="log-form-title">Log a new hit</div>
+              <div class="log-inputs">
+                <input class="inp-url" id="lu-${s.id}" type="url" placeholder="Post URL" />
+                <input class="inp-title" id="lt-${s.id}" type="text" placeholder="Poster title / company" />
+                <input class="inp-score" id="ls-${s.id}" type="number" placeholder="Score" min="0" max="100" />
+              </div>
+              <div class="log-btns">
+                <button class="btn-log" onclick="logHit(${s.id})">✓ Log hit</button>
+                <button class="btn-skip-sm" onclick="skipLog(${s.id})">No hits</button>
+              </div>
+              <div class="log-confirm" id="lc-${s.id}">✓ Logged</div>
+            </div>
+          </div>`;
+        list.appendChild(card);
+      });
+      sec.appendChild(list); content.appendChild(sec);
+    });
+  }
+
+  // ── Scorer tab ────────────────────────────────────────────────────────────
+  function scorePost() {
+    const text = document.getElementById("post-input").value.trim(); if (!text) return;
+    const lower = text.toLowerCase(); let total = 0; const results = [];
+    Object.entries(CONFIG.scoring).forEach(([, sig]) => {
+      const fired = sig.keywords.some(kw => lower.includes(kw.toLowerCase()));
+      results.push({ label: sig.label, weight: sig.weight, fired });
+      if (fired) total = Math.min(100, total + sig.weight);
+    });
+    const q = total >= CONFIG.qualifiedThreshold;
+    document.getElementById("score-box").className = "score-box " + (q ? "qualified" : "skip");
+    document.getElementById("score-num").textContent = total + "/100";
+    document.getElementById("score-verdict").textContent = q ? "✓ Qualified — log to pipeline" : "✗ Skip";
+    document.getElementById("breakdown-rows").innerHTML = results.map(r =>
+      `<div class="sig-row${r.fired ? " fired" : ""}"><span class="sig-label">${r.label}</span><span class="sig-weight">${r.fired ? "+" + r.weight : "—"}</span></div>`
+    ).join("");
+    document.getElementById("score-result").style.display = "block";
+  }
+  function clearScore() { document.getElementById("post-input").value = ""; document.getElementById("score-result").style.display = "none"; }
+
+  // ── Pipeline tab ──────────────────────────────────────────────────────────
+  let pipelineView = "pipeline";
+  function showPipelineView(v) {
+    pipelineView = v;
+    document.querySelectorAll(".view-pill").forEach(p => p.classList.remove("active"));
+    document.getElementById("pill-" + v).classList.add("active");
+    renderPipeline();
+  }
+
+  function getStringLabel(id) { const s = CONFIG.strings.find(s => s.id === Number(id)); return s ? `#${s.id} ${s.label}` : `#${id}`; }
+
+  function renderPipeline() {
+    let leads = loadLeads();
+    if (pipelineView === "active") leads = leads.filter(l => !["closed","dead"].includes(l.status));
+    if (pipelineView === "qualified") leads = leads.filter(l => Number(l.score) >= CONFIG.qualifiedThreshold);
+    const view = document.getElementById("pipeline-view");
+    if (!leads.length) { view.innerHTML = '<p class="empty">No leads yet.</p>'; return; }
+    view.innerHTML = `<table><thead><tr><th>String</th><th>Post</th><th>Poster</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+      ${leads.map((l, i) => `<tr>
+        <td style="font-size:11px;color:var(--gray-400)">${getStringLabel(l.stringId)}</td>
+        <td>${l.url ? `<a class="url-link" href="${l.url}" target="_blank" rel="noopener">View ↗</a>` : "—"}</td>
+        <td>${l.posterTitle || "—"}</td>
+        <td><span class="score-badge ${Number(l.score) >= CONFIG.qualifiedThreshold ? "qualified" : "skip"}">${l.score}</span></td>
+        <td><select class="status-sel" onchange="updateStatus(${i},this.value)">${CONFIG.statuses.map(s => `<option value="${s}"${l.status===s?" selected":""}>${s}</option>`).join("")}</select></td>
+        <td style="font-size:11px;color:var(--gray-400)">${l.date}</td>
+        <td><button class="del-btn" onclick="deleteLead(${i})">×</button></td>
+      </tr>`).join("")}
+    </tbody></table>`;
+  }
+
+  function addLead() {
+    const stringId = Number(document.getElementById("new-string-id").value);
+    const url = document.getElementById("new-url").value.trim();
+    const posterTitle = document.getElementById("new-title").value.trim();
+    const score = document.getElementById("new-score").value.trim();
+    if (!url && !posterTitle) return;
+    const leads = loadLeads();
+    leads.unshift({ stringId, url, posterTitle, score: score || "0", status: "hit", date: todayStr() });
+    saveLeads(leads);
+    document.getElementById("new-url").value = "";
+    document.getElementById("new-title").value = "";
+    document.getElementById("new-score").value = "";
+    renderPipeline(); updateBadges();
+  }
+
+  function updateStatus(i, v) { const l = loadLeads(); l[i].status = v; saveLeads(l); }
+
+  function deleteLead(i) { const l = loadLeads(); l.splice(i,1); saveLeads(l); renderPipeline(); updateBadges(); }
+
+  function exportCSV() {
+    const leads = loadLeads(); if (!leads.length) { alert("No leads."); return; }
+    const csv = ["String #,String Label,Post URL,Poster Title,ICP Score,Status,Date",
+      ...leads.map(l => [l.stringId,getStringLabel(l.stringId),l.url,l.posterTitle,l.score,l.status,l.date].map(v=>`"${(v||"").replace(/"/g,'""')}"`).join(","))
+    ].join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download = "pipeline-" + todayStr() + ".csv"; a.click();
+  }
+
+  // ── Review tab ────────────────────────────────────────────────────────────
+  function renderReview() {
+    const leads = loadLeads(); const byStr = {};
+    CONFIG.strings.forEach(s => { byStr[s.id] = { label: s.label, tier: s.tier, hits: 0, qualified: 0 }; });
+    leads.forEach(l => { if (byStr[l.stringId]) { byStr[l.stringId].hits++; if (Number(l.score) >= CONFIG.qualifiedThreshold) byStr[l.stringId].qualified++; } });
+    const rows = Object.entries(byStr).filter(([,d]) => d.hits > 0).sort((a,b) => b[1].hits - a[1].hits);
+    const view = document.getElementById("review-view");
+    if (!rows.length) { view.innerHTML = '<p class="empty">No data yet. Log leads first.</p>'; return; }
+    view.innerHTML = `<table><thead><tr><th>#</th><th>String</th><th>Tier</th><th>Hits</th><th>Qualified</th><th>ICP %</th><th>Day 5</th></tr></thead><tbody>
+      ${rows.map(([id,d]) => {
+        const pct = Math.round((d.qualified/d.hits)*100);
+        const verdict = d.hits >= 3 && pct < 60 ? '<span class="kill-flag">Kill</span>' : d.hits >= 3 ? '<span class="ok-flag">Keep</span>' : '<span style="color:var(--gray-400);font-size:11px">Need data</span>';
+        return `<tr><td>${id}</td><td>${d.label}</td><td>T${d.tier}</td><td>${d.hits}</td><td>${d.qualified}</td><td>${pct}%</td><td>${verdict}</td></tr>`;
+      }).join("")}
+    </tbody></table>`;
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  // Populate pipeline string dropdown
+  const sel = document.getElementById("new-string-id");
+  CONFIG.strings.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = `#${s.id} — ${s.label}`; sel.appendChild(o); });
+
+  initNotif(); renderSearch(); updateBadges(); tickTimer();
+  setInterval(() => { tickTimer(); updateBadges(); }, 1000);
+</script>
+</body>
+</html>
