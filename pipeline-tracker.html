@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipeline Tracker</title>
+  <script src="config.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 24px; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
+    .nav { display: flex; gap: 12px; margin-bottom: 20px; }
+    .nav a { font-size: 13px; color: #0077b5; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    .add-form { background: white; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+    .field label { display: block; font-size: 11px; font-weight: 600; color: #888; margin-bottom: 4px; text-transform: uppercase; }
+    .field input, .field select { width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; }
+    .field input:focus, .field select:focus { outline: none; border-color: #0077b5; }
+    .add-btn { padding: 9px 18px; font-size: 13px; font-weight: 600; background: #0077b5; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+    .add-btn:hover { background: #005f8e; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .toolbar-left { display: flex; gap: 10px; align-items: center; }
+    .view-toggle { display: flex; gap: 6px; }
+    .view-btn { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; }
+    .view-btn.active { background: #0077b5; color: white; border-color: #0077b5; }
+    .export-btn { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; }
+    .export-btn:hover { background: #f0f0f0; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; border: 1px solid #e0e0e0; font-size: 13px; }
+    th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9f9f9; }
+    .score-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 12px; }
+    .score-badge.qualified { background: #e6f4ea; color: #1e7e34; }
+    .score-badge.skip { background: #fce8e6; color: #c5221f; }
+    select.status-select { font-size: 12px; border: 1px solid #ddd; border-radius: 4px; padding: 3px 6px; background: white; cursor: pointer; }
+    .del-btn { background: none; border: none; cursor: pointer; color: #ccc; font-size: 16px; padding: 2px 6px; }
+    .del-btn:hover { color: #ea4335; }
+    .url-link { color: #0077b5; text-decoration: none; font-size: 12px; }
+    .url-link:hover { text-decoration: underline; }
+    .empty { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
+    /* Weekly review view */
+    .review-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; border: 1px solid #e0e0e0; font-size: 13px; }
+    .review-table th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
+    .review-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+    .review-table tr:last-child td { border-bottom: none; }
+    .kill-flag { font-size: 11px; font-weight: 700; color: #c5221f; background: #fce8e6; padding: 2px 8px; border-radius: 10px; }
+    .ok-flag { font-size: 11px; font-weight: 700; color: #1e7e34; background: #e6f4ea; padding: 2px 8px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Pipeline Tracker</h1>
+  <p class="subtitle">Log every hit. Track which strings are worth running.</p>
+  <nav class="nav">
+    <a href="search-launcher.html">← Search Launcher</a>
+    <a href="lead-scorer.html">← Lead Scorer</a>
+  </nav>
+
+  <div class="add-form">
+    <div class="field">
+      <label>String #</label>
+      <select id="new-string-id"></select>
+    </div>
+    <div class="field">
+      <label>Post URL</label>
+      <input id="new-url" type="url" placeholder="https://linkedin.com/..." />
+    </div>
+    <div class="field">
+      <label>Poster Title</label>
+      <input id="new-title" type="text" placeholder="e.g. Founder @ Acme" />
+    </div>
+    <div class="field">
+      <label>ICP Score</label>
+      <input id="new-score" type="number" min="0" max="100" placeholder="0–100" />
+    </div>
+    <button class="add-btn" id="add-btn">+ Add Lead</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-pipeline">Pipeline</button>
+        <button class="view-btn" id="btn-review">Weekly Review</button>
+      </div>
+    </div>
+    <button class="export-btn" id="export-btn">Export CSV</button>
+  </div>
+
+  <div id="pipeline-view"></div>
+  <div id="review-view" style="display:none"></div>
+
+  <script>
+    const STORAGE_KEY = "linkedin_pipeline_v1";
+
+    function loadLeads() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveLeads(leads) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+    }
+
+    function getStringLabel(id) {
+      const s = CONFIG.strings.find(s => s.id === Number(id));
+      return s ? `#${s.id} ${s.label}` : `#${id}`;
+    }
+
+    // Populate string dropdown
+    const stringSelect = document.getElementById("new-string-id");
+    CONFIG.strings.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = `#${s.id} — ${s.label}`;
+      stringSelect.appendChild(opt);
+    });
+
+    function renderPipeline() {
+      const leads = loadLeads();
+      const view = document.getElementById("pipeline-view");
+
+      if (leads.length === 0) {
+        view.innerHTML = '<p class="empty">No leads yet. Add your first hit above.</p>';
+        return;
+      }
+
+      view.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>String</th>
+              <th>Post</th>
+              <th>Poster Title</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${leads.map((lead, i) => `
+              <tr>
+                <td>${getStringLabel(lead.stringId)}</td>
+                <td>${lead.url ? `<a class="url-link" href="${lead.url}" target="_blank" rel="noopener">View ↗</a>` : "—"}</td>
+                <td>${lead.posterTitle || "—"}</td>
+                <td><span class="score-badge ${Number(lead.score) >= CONFIG.qualifiedThreshold ? "qualified" : "skip"}">${lead.score}</span></td>
+                <td>
+                  <select class="status-select" data-index="${i}" onchange="updateStatus(${i}, this.value)">
+                    ${CONFIG.statuses.map(s => `<option value="${s}" ${lead.status === s ? "selected" : ""}>${s}</option>`).join("")}
+                  </select>
+                </td>
+                <td>${lead.date}</td>
+                <td><button class="del-btn" onclick="deleteLead(${i})">×</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderReview() {
+      const leads = loadLeads();
+      const view = document.getElementById("review-view");
+
+      // Group by string
+      const byString = {};
+      CONFIG.strings.forEach(s => { byString[s.id] = { label: s.label, tier: s.tier, hits: 0, qualified: 0 }; });
+      leads.forEach(lead => {
+        if (byString[lead.stringId]) {
+          byString[lead.stringId].hits++;
+          if (Number(lead.score) >= CONFIG.qualifiedThreshold) byString[lead.stringId].qualified++;
+        }
+      });
+
+      const rows = Object.entries(byString)
+        .filter(([, d]) => d.hits > 0)
+        .sort((a, b) => b[1].hits - a[1].hits);
+
+      if (rows.length === 0) {
+        view.innerHTML = '<p class="empty">No data yet. Log some leads first.</p>';
+        return;
+      }
+
+      view.innerHTML = `
+        <table class="review-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>String</th>
+              <th>Tier</th>
+              <th>Hits</th>
+              <th>Qualified</th>
+              <th>ICP %</th>
+              <th>Day 5 verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(([id, d]) => {
+              const pct = d.hits > 0 ? Math.round((d.qualified / d.hits) * 100) : 0;
+              const verdict = d.hits >= 3 && pct < 60
+                ? '<span class="kill-flag">Kill / replace</span>'
+                : d.hits >= 3 && pct >= 60
+                ? '<span class="ok-flag">Keep</span>'
+                : '<span style="color:#aaa;font-size:11px">Need more data</span>';
+              return `
+                <tr>
+                  <td>${id}</td>
+                  <td>${d.label}</td>
+                  <td>T${d.tier}</td>
+                  <td>${d.hits}</td>
+                  <td>${d.qualified}</td>
+                  <td>${pct}%</td>
+                  <td>${verdict}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function updateStatus(index, value) {
+      const leads = loadLeads();
+      leads[index].status = value;
+      saveLeads(leads);
+    }
+
+    function deleteLead(index) {
+      const leads = loadLeads();
+      leads.splice(index, 1);
+      saveLeads(leads);
+      renderPipeline();
+      renderReview();
+    }
+
+    document.getElementById("add-btn").addEventListener("click", () => {
+      const stringId = Number(document.getElementById("new-string-id").value);
+      const url = document.getElementById("new-url").value.trim();
+      const posterTitle = document.getElementById("new-title").value.trim();
+      const score = document.getElementById("new-score").value.trim();
+
+      if (!posterTitle && !url) return;
+
+      const leads = loadLeads();
+      leads.unshift({
+        stringId,
+        url,
+        posterTitle,
+        score: score || "0",
+        status: "hit",
+        date: new Date().toISOString().slice(0, 10),
+      });
+      saveLeads(leads);
+
+      document.getElementById("new-url").value = "";
+      document.getElementById("new-title").value = "";
+      document.getElementById("new-score").value = "";
+
+      renderPipeline();
+      renderReview();
+    });
+
+    document.getElementById("btn-pipeline").addEventListener("click", () => {
+      document.getElementById("pipeline-view").style.display = "";
+      document.getElementById("review-view").style.display = "none";
+      document.getElementById("btn-pipeline").classList.add("active");
+      document.getElementById("btn-review").classList.remove("active");
+    });
+
+    document.getElementById("btn-review").addEventListener("click", () => {
+      document.getElementById("pipeline-view").style.display = "none";
+      document.getElementById("review-view").style.display = "";
+      document.getElementById("btn-pipeline").classList.remove("active");
+      document.getElementById("btn-review").classList.add("active");
+      renderReview();
+    });
+
+    document.getElementById("export-btn").addEventListener("click", () => {
+      const leads = loadLeads();
+      if (leads.length === 0) { alert("No leads to export."); return; }
+      const header = "String #,String Label,Post URL,Poster Title,ICP Score,Status,Date";
+      const rows = leads.map(l =>
+        [l.stringId, getStringLabel(l.stringId), l.url, l.posterTitle, l.score, l.status, l.date]
+          .map(v => `"${(v || "").replace(/"/g, '""')}"`)
+          .join(",")
+      );
+      const csv = [header, ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "linkedin-pipeline-" + new Date().toISOString().slice(0, 10) + ".csv";
+      a.click();
+    });
+
+    renderPipeline();
+  </script>
+</body>
+</html>
