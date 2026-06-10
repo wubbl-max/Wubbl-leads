@@ -3,398 +3,604 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LinkedIn Search Launcher</title>
+  <title>LinkedIn Sweep</title>
   <script src="config.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 24px; }
-    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .subtitle { font-size: 13px; color: #666; margin-bottom: 8px; }
-    .nav { display: flex; gap: 12px; margin-bottom: 20px; }
-    .nav a { font-size: 13px; color: #0077b5; text-decoration: none; }
-    .nav a:hover { text-decoration: underline; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Timer bar */
-    .timer-bar { display: flex; align-items: center; gap: 12px; background: white; border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; }
-    .timer-clock { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; color: #1a1a1a; min-width: 60px; }
-    .timer-clock.urgent { color: #ea4335; }
-    .timer-label { font-size: 12px; color: #888; flex: 1; }
-    .timer-label strong { display: block; font-size: 13px; color: #1a1a1a; }
-    #notify-btn { font-size: 12px; padding: 6px 14px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; white-space: nowrap; }
-    #notify-btn.enabled { background: #e6f4ea; border-color: #34a853; color: #1e7e34; }
-    #reset-btn { font-size: 12px; padding: 6px 14px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; }
-    #reset-btn:hover { background: #f0f0f0; }
+    :root {
+      --blue: #0077b5;
+      --blue-dark: #005f8e;
+      --blue-light: #e8f4fb;
+      --green: #1a7f37;
+      --green-light: #ddf4e4;
+      --red: #cf222e;
+      --red-light: #ffebe9;
+      --yellow: #9a6700;
+      --yellow-light: #fff8c5;
+      --gray-50: #f6f8fa;
+      --gray-100: #eaeef2;
+      --gray-200: #d0d7de;
+      --gray-400: #8c959f;
+      --gray-600: #57606a;
+      --gray-900: #1f2328;
+      --radius: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    }
 
-    /* Progress bar */
-    .progress-wrap { height: 4px; background: #eee; border-radius: 2px; margin-bottom: 20px; }
-    .progress-fill { height: 4px; background: #0077b5; border-radius: 2px; transition: width 10s linear; }
-    .progress-fill.urgent { background: #ea4335; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+      min-height: 100vh;
+    }
 
-    /* Sweep summary */
-    .sweep-summary { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-    .sweep-stat { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px 14px; font-size: 12px; color: #888; }
-    .sweep-stat strong { display: block; font-size: 18px; font-weight: 700; color: #1a1a1a; }
+    /* ── Layout ── */
+    .app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
 
-    /* Tier sections */
-    .tier { margin-bottom: 28px; }
-    .tier-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 8px; }
-    .tier-action { font-size: 11px; color: #0077b5; font-weight: 500; }
-    .tier-progress { margin-left: auto; font-size: 11px; color: #aaa; }
+    /* ── Sidebar ── */
+    .sidebar {
+      background: white;
+      border-right: 1px solid var(--gray-200);
+      padding: 20px 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-brand { padding: 0 16px 16px; border-bottom: 1px solid var(--gray-100); margin-bottom: 8px; }
+    .sidebar-brand h1 { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+    .sidebar-brand p { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 
-    /* String rows */
-    .string-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border-radius: 8px; margin-bottom: 5px; border: 1px solid #e8e8e8; transition: border-color 0.15s; }
-    .string-row:hover { border-color: #0077b5; }
-    .string-row.priority { border-left: 3px solid #0077b5; background: #f0f7ff; }
-    .string-row.done { border-left: 3px solid #34a853; background: #f6fef8; opacity: 0.75; }
-    .string-row.stale { border-left: 3px solid #ea4335; }
+    .sidebar-nav { padding: 0 8px; margin-bottom: 12px; }
+    .sidebar-nav a {
+      display: block; padding: 7px 10px; font-size: 12px; color: var(--gray-600);
+      text-decoration: none; border-radius: 6px;
+    }
+    .sidebar-nav a:hover { background: var(--gray-50); color: var(--gray-900); }
 
-    .string-id { font-size: 11px; color: #aaa; min-width: 20px; }
-    .string-label { flex: 1; font-size: 14px; }
-    .string-row.priority .string-label { font-weight: 600; }
+    /* Timer widget */
+    .timer-widget {
+      margin: 0 12px 12px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+    .timer-widget.urgent { background: var(--red-light); border-color: var(--red); }
+    .timer-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+    .timer-clock { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--gray-900); }
+    .timer-widget.urgent .timer-clock { color: var(--red); }
+    .timer-status { font-size: 11px; color: var(--gray-400); }
+    .timer-widget.urgent .timer-status { color: var(--red); }
+    .timer-bar { height: 3px; background: var(--gray-200); border-radius: 2px; margin: 6px 0; overflow: hidden; }
+    .timer-fill { height: 3px; background: var(--blue); border-radius: 2px; transition: width 1s linear; }
+    .timer-widget.urgent .timer-fill { background: var(--red); }
+    .timer-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .timer-actions button {
+      flex: 1; font-size: 11px; padding: 5px 8px; border: 1px solid var(--gray-200);
+      border-radius: 5px; background: white; cursor: pointer; color: var(--gray-600);
+    }
+    .timer-actions button:hover { background: var(--gray-50); }
+    .timer-actions button.on { background: var(--green-light); border-color: var(--green); color: var(--green); }
 
-    /* Status indicator dot */
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .status-dot.fresh { background: #34a853; }
-    .status-dot.stale { background: #ea4335; }
-    .status-dot.idle { background: #ddd; }
+    /* Stats */
+    .sidebar-stats { padding: 0 12px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .stat-card { background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: 6px; padding: 8px 10px; }
+    .stat-card .val { font-size: 20px; font-weight: 700; color: var(--gray-900); }
+    .stat-card .lbl { font-size: 10px; color: var(--gray-400); margin-top: 1px; }
 
-    /* Last run label */
-    .last-run { font-size: 11px; color: #aaa; white-space: nowrap; min-width: 60px; text-align: right; }
-    .last-run.stale { color: #ea4335; }
+    /* Tier filter tabs */
+    .tier-tabs { padding: 0 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+    .tier-tab {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+      border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--gray-600);
+      border: none; background: none; text-align: left; width: 100%;
+    }
+    .tier-tab:hover { background: var(--gray-50); }
+    .tier-tab.active { background: var(--blue-light); color: var(--blue); font-weight: 600; }
+    .tier-tab .tab-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-200); flex-shrink: 0; }
+    .tier-tab.t1 .tab-dot { background: var(--red); }
+    .tier-tab.t2 .tab-dot { background: var(--yellow); }
+    .tier-tab.t3 .tab-dot { background: var(--blue); }
+    .tier-tab.t4 .tab-dot { background: var(--gray-400); }
+    .tier-tab .tab-count { margin-left: auto; font-size: 10px; background: var(--gray-100); color: var(--gray-600); padding: 1px 6px; border-radius: 10px; }
+    .tier-tab.active .tab-count { background: var(--blue); color: white; }
 
-    /* Badges */
-    .badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; white-space: nowrap; }
-    .badge-blue { background: #0077b5; color: white; }
-    .badge-green { background: #e6f4ea; color: #1e7e34; }
-    .badge-red { background: #fce8e6; color: #c5221f; }
+    .sidebar-bottom { margin-top: auto; padding: 12px; border-top: 1px solid var(--gray-100); }
+    .sidebar-bottom a { font-size: 11px; color: var(--gray-400); text-decoration: none; display: block; padding: 3px 0; }
+    .sidebar-bottom a:hover { color: var(--blue); }
 
-    a.open-btn { font-size: 12px; color: white; background: #0077b5; padding: 5px 12px; border-radius: 5px; text-decoration: none; white-space: nowrap; }
-    a.open-btn:hover { background: #005f8e; }
-    a.open-btn.done { background: #34a853; }
+    /* ── Main content ── */
+    .main { padding: 24px; max-width: 860px; }
 
-    /* Quick log panel */
-    .quick-log { background: white; border: 1px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
-    .quick-log-title { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
-    .quick-log-row { display: flex; gap: 8px; align-items: center; }
-    .quick-log-row input { flex: 1; padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; }
-    .quick-log-row input:focus { outline: none; border-color: #0077b5; }
-    .quick-log-row select { padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; background: white; }
-    .quick-log-row button { padding: 7px 16px; font-size: 13px; font-weight: 600; background: #0077b5; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; }
-    .quick-log-row button:hover { background: #005f8e; }
-    .log-feedback { font-size: 12px; color: #34a853; margin-top: 6px; display: none; }
+    /* Section header */
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .section-title { font-size: 16px; font-weight: 700; }
+    .section-sub { font-size: 12px; color: var(--gray-400); }
+    .section-action-tag { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 10px; }
+    .tag-red { background: var(--red-light); color: var(--red); }
+    .tag-yellow { background: var(--yellow-light); color: var(--yellow); }
+    .tag-blue { background: var(--blue-light); color: var(--blue); }
+    .tag-gray { background: var(--gray-100); color: var(--gray-600); }
+    .section-progress { margin-left: auto; font-size: 12px; color: var(--gray-400); }
+
+    /* String cards */
+    .string-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 32px; }
+
+    .string-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: border-color 0.1s;
+    }
+    .string-card:hover { border-color: var(--blue); }
+    .string-card.is-done { border-left: 3px solid var(--green); opacity: 0.7; }
+    .string-card.is-overdue { border-left: 3px solid var(--red); }
+    .string-card.is-priority { border-left: 3px solid var(--blue); }
+
+    /* Card summary row (always visible) */
+    .card-summary {
+      display: flex; align-items: center; gap: 10px; padding: 11px 14px; cursor: pointer;
+    }
+
+    .status-pip { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .pip-idle { background: var(--gray-200); }
+    .pip-done { background: var(--green); }
+    .pip-overdue { background: var(--red); }
+
+    .card-num { font-size: 11px; color: var(--gray-400); min-width: 18px; }
+    .card-label { flex: 1; font-size: 13px; font-weight: 500; }
+    .card-meta { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
+    .card-meta.overdue { color: var(--red); }
+
+    .expand-icon { font-size: 10px; color: var(--gray-400); margin-right: 4px; transition: transform 0.15s; }
+    .string-card.open .expand-icon { transform: rotate(90deg); }
+
+    .card-open-btn {
+      font-size: 12px; font-weight: 600; padding: 5px 14px;
+      background: var(--blue); color: white; border-radius: 5px;
+      text-decoration: none; white-space: nowrap; flex-shrink: 0;
+    }
+    .card-open-btn:hover { background: var(--blue-dark); }
+    .card-open-btn.done { background: var(--green); }
+    .card-open-btn.done:hover { background: #166b2e; }
+
+    /* Card detail panel (expandable) */
+    .card-detail {
+      display: none; border-top: 1px solid var(--gray-100);
+      padding: 12px 14px; background: var(--gray-50);
+    }
+    .string-card.open .card-detail { display: block; }
+
+    .detail-query {
+      font-family: "SF Mono", ui-monospace, monospace;
+      font-size: 11px; color: var(--gray-600);
+      background: white; border: 1px solid var(--gray-200);
+      border-radius: 5px; padding: 8px 10px;
+      white-space: pre-wrap; word-break: break-all;
+      margin-bottom: 10px; line-height: 1.5;
+    }
+
+    .detail-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .detail-hint { font-size: 11px; color: var(--gray-400); flex: 1; min-width: 200px; }
+
+    /* Inline log form (shown after opening) */
+    .log-form {
+      display: none; margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid var(--gray-200);
+    }
+    .log-form.visible { display: block; }
+    .log-form-title { font-size: 11px; font-weight: 600; color: var(--gray-600); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .log-inputs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .log-inputs input {
+      padding: 6px 9px; font-size: 12px; border: 1px solid var(--gray-200);
+      border-radius: 5px; font-family: inherit;
+    }
+    .log-inputs input:focus { outline: none; border-color: var(--blue); }
+    .log-inputs .inp-url { flex: 2; min-width: 200px; }
+    .log-inputs .inp-title { flex: 1; min-width: 140px; }
+    .log-inputs .inp-score { width: 70px; }
+    .log-btns { display: flex; gap: 6px; margin-top: 6px; }
+    .log-btns button {
+      font-size: 12px; font-weight: 600; padding: 6px 14px;
+      border: none; border-radius: 5px; cursor: pointer;
+    }
+    .btn-log { background: var(--green); color: white; }
+    .btn-log:hover { background: #166b2e; }
+    .btn-skip { background: var(--gray-100); color: var(--gray-600); }
+    .btn-skip:hover { background: var(--gray-200); }
+    .log-confirm { font-size: 11px; color: var(--green); margin-top: 4px; display: none; }
+
+    /* Empty state */
+    .empty-section { text-align: center; padding: 32px; color: var(--gray-400); font-size: 13px; }
   </style>
 </head>
 <body>
-  <h1>LinkedIn Search Launcher</h1>
-  <p class="subtitle">Open → scan → log hits. Tier 1 strings every 60 min.</p>
-  <nav class="nav">
-    <a href="lead-scorer.html">→ Lead Scorer</a>
-    <a href="pipeline-tracker.html">→ Pipeline Tracker</a>
-  </nav>
+<div class="app-shell">
 
-  <!-- Timer -->
-  <div class="timer-bar">
-    <div id="timer-clock" class="timer-clock">60:00</div>
-    <div class="timer-label">
-      <strong id="timer-status">Next sweep due</strong>
-      <span id="timer-sub">Start your first sweep to begin the timer</span>
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1>LinkedIn Sweep</h1>
+      <p>Open → scan → log hits</p>
     </div>
-    <button id="reset-btn" onclick="resetTimer()">Reset Timer</button>
-    <button id="notify-btn" onclick="toggleNotifications()">Enable Alerts</button>
-  </div>
-  <div class="progress-wrap"><div id="progress-fill" class="progress-fill" style="width:100%"></div></div>
 
-  <!-- Sweep stats -->
-  <div class="sweep-summary">
-    <div class="sweep-stat"><strong id="stat-sweeps">0</strong>Sweeps today</div>
-    <div class="sweep-stat"><strong id="stat-opened">0</strong>Strings opened</div>
-    <div class="sweep-stat"><strong id="stat-done">0</strong>Completed</div>
-    <div class="sweep-stat"><strong id="stat-stale">0</strong>Overdue</div>
-  </div>
-
-  <!-- Quick log -->
-  <div class="quick-log">
-    <div class="quick-log-title">Quick Log a Hit</div>
-    <div class="quick-log-row">
-      <select id="ql-string"></select>
-      <input id="ql-url" type="url" placeholder="Post URL (paste from LinkedIn)" />
-      <input id="ql-title" type="text" placeholder="Poster title" style="max-width:180px" />
-      <input id="ql-score" type="number" min="0" max="100" placeholder="Score" style="max-width:70px" />
-      <button onclick="quickLog()">+ Log</button>
+    <div class="sidebar-nav">
+      <a href="lead-scorer.html">⬡ Lead Scorer</a>
+      <a href="pipeline-tracker.html">⬡ Pipeline Tracker</a>
     </div>
-    <div id="log-feedback" class="log-feedback">✓ Logged to pipeline</div>
-  </div>
 
-  <div id="app"></div>
+    <!-- Timer -->
+    <div id="timer-widget" class="timer-widget">
+      <div class="timer-top">
+        <span id="timer-clock" class="timer-clock">60:00</span>
+        <span id="timer-status" class="timer-status">No sweep yet</span>
+      </div>
+      <div class="timer-bar"><div id="timer-fill" class="timer-fill" style="width:100%"></div></div>
+      <div class="timer-actions">
+        <button id="reset-btn" onclick="resetTimer()">↺ Reset</button>
+        <button id="notify-btn" onclick="toggleNotifications()">🔔 Alerts</button>
+      </div>
+    </div>
 
-  <script>
-    const STORAGE_KEY = "li_launcher_v1";
-    const TIMER_KEY = "li_timer_v1";
-    const SWEEP_KEY = "li_sweeps_v1";
-    const INTERVAL_MS = 60 * 60 * 1000; // 60 minutes
+    <!-- Stats -->
+    <div class="sidebar-stats">
+      <div class="stat-card"><div id="s-sweeps" class="val">0</div><div class="lbl">Sweeps today</div></div>
+      <div class="stat-card"><div id="s-done" class="val">0</div><div class="lbl">Completed</div></div>
+      <div class="stat-card"><div id="s-overdue" class="val">0</div><div class="lbl">Overdue</div></div>
+      <div class="stat-card"><div id="s-logged" class="val">0</div><div class="lbl">Hits logged</div></div>
+    </div>
 
-    function loadState() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-      catch { return {}; }
+    <!-- Tier filter -->
+    <div class="tier-tabs">
+      <button class="tier-tab active" data-tier="all" onclick="filterTier('all')">
+        <span class="tab-dot" style="background:var(--gray-400)"></span>All strings
+        <span id="tc-all" class="tab-count">23</span>
+      </button>
+      <button class="tier-tab t1" data-tier="1" onclick="filterTier('1')">
+        <span class="tab-dot"></span>Tier 1 — Hottest
+        <span id="tc-1" class="tab-count">6</span>
+      </button>
+      <button class="tier-tab t2" data-tier="2" onclick="filterTier('2')">
+        <span class="tab-dot"></span>Tier 2 — Strong Signal
+        <span id="tc-2" class="tab-count">10</span>
+      </button>
+      <button class="tier-tab t3" data-tier="3" onclick="filterTier('3')">
+        <span class="tab-dot"></span>Tier 3 — Geo-Targeted
+        <span id="tc-3" class="tab-count">4</span>
+      </button>
+      <button class="tier-tab t4" data-tier="4" onclick="filterTier('4')">
+        <span class="tab-dot"></span>Tier 4 — Weekly
+        <span id="tc-4" class="tab-count">3</span>
+      </button>
+    </div>
+
+    <div class="sidebar-bottom">
+      <a href="pipeline-tracker.html">View full pipeline →</a>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main" id="main-content">
+    <!-- rendered by JS -->
+  </main>
+
+</div>
+
+<script>
+  const STORAGE_KEY  = "li_launcher_v1";
+  const TIMER_KEY    = "li_timer_v1";
+  const SWEEP_KEY    = "li_sweeps_v1";
+  const PIPELINE_KEY = "linkedin_pipeline_v1";
+  const INTERVAL_MS  = 60 * 60 * 1000;
+
+  let currentTier = "all";
+  let notifFired  = false;
+
+  // ── Storage helpers ──────────────────────────────────────────────────────
+  function loadState()  { try { return JSON.parse(localStorage.getItem(STORAGE_KEY))  || {}; } catch { return {}; } }
+  function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+  function loadTimer()  { try { return JSON.parse(localStorage.getItem(TIMER_KEY))    || { start: null }; } catch { return { start: null }; } }
+  function saveTimer(t) { localStorage.setItem(TIMER_KEY, JSON.stringify(t)); }
+  function loadSweeps() { try { return JSON.parse(localStorage.getItem(SWEEP_KEY))    || { today: 0, date: "" }; } catch { return { today: 0, date: "" }; } }
+  function saveSweeps(s){ localStorage.setItem(SWEEP_KEY, JSON.stringify(s)); }
+  function loadLeads()  { try { return JSON.parse(localStorage.getItem(PIPELINE_KEY)) || []; } catch { return []; } }
+  function saveLeads(l) { localStorage.setItem(PIPELINE_KEY, JSON.stringify(l)); }
+  function todayStr()   { return new Date().toISOString().slice(0, 10); }
+
+  function formatAge(ms) {
+    if (ms < 60000) return "just now";
+    const m = Math.floor(ms / 60000);
+    if (m < 60) return `${m}m ago`;
+    return `${Math.floor(m / 60)}h ago`;
+  }
+
+  function encodeLinkedInURL(query) {
+    return "https://www.linkedin.com/search/results/content/?keywords=" +
+      encodeURIComponent(query) + "&sortBy=date_posted";
+  }
+
+  // ── Timer ─────────────────────────────────────────────────────────────────
+  function resetTimer() {
+    const t = loadTimer(); t.start = Date.now(); saveTimer(t);
+    notifFired = false;
+    const sw = loadSweeps();
+    if (sw.date !== todayStr()) { sw.today = 0; sw.date = todayStr(); }
+    sw.today++; saveSweeps(sw);
+    tickTimer(); updateStats();
+  }
+
+  function tickTimer() {
+    const t = loadTimer();
+    const widget = document.getElementById("timer-widget");
+    const clock  = document.getElementById("timer-clock");
+    const fill   = document.getElementById("timer-fill");
+    const status = document.getElementById("timer-status");
+
+    if (!t.start) {
+      clock.textContent = "60:00"; status.textContent = "Open a string to start";
+      fill.style.width = "100%"; widget.className = "timer-widget"; return;
     }
-    function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+    const remaining = Math.max(0, INTERVAL_MS - (Date.now() - t.start));
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    clock.textContent = `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+    fill.style.width = (remaining / INTERVAL_MS * 100) + "%";
 
-    function loadTimer() {
-      try { return JSON.parse(localStorage.getItem(TIMER_KEY)) || { start: null, notifs: false }; }
-      catch { return { start: null, notifs: false }; }
+    if (remaining === 0) {
+      widget.className = "timer-widget urgent";
+      status.textContent = "⚠ Sweep overdue";
+      if (!notifFired) { fireNotif(); notifFired = true; }
+    } else if (remaining < 5 * 60 * 1000) {
+      widget.className = "timer-widget urgent";
+      status.textContent = "Due soon";
+    } else {
+      widget.className = "timer-widget";
+      status.textContent = "until next sweep";
     }
-    function saveTimer(t) { localStorage.setItem(TIMER_KEY, JSON.stringify(t)); }
+  }
 
-    function loadSweeps() {
-      try { return JSON.parse(localStorage.getItem(SWEEP_KEY)) || { today: 0, date: "" }; }
-      catch { return { today: 0, date: "" }; }
-    }
-    function saveSweeps(s) { localStorage.setItem(SWEEP_KEY, JSON.stringify(s)); }
+  function fireNotif() {
+    if (Notification.permission === "granted")
+      new Notification("LinkedIn Sweep Due", { body: "60 min passed — time to scan Tier 1" });
+  }
 
-    function today() { return new Date().toISOString().slice(0, 10); }
+  function toggleNotifications() {
+    const btn = document.getElementById("notify-btn");
+    if (Notification.permission === "granted") { btn.textContent = "🔔 ON"; btn.className = "on"; return; }
+    Notification.requestPermission().then(p => {
+      if (p === "granted") { btn.textContent = "🔔 ON"; btn.className = "on"; }
+    });
+  }
 
-    // ── Timer ──────────────────────────────────────────────────────────────
-    let timerInterval = null;
-    let notifFired = false;
-
-    function resetTimer() {
-      const t = loadTimer();
-      t.start = Date.now();
-      saveTimer(t);
-      notifFired = false;
-      const sweeps = loadSweeps();
-      if (sweeps.date !== today()) { sweeps.today = 0; sweeps.date = today(); }
-      sweeps.today++;
-      saveSweeps(sweeps);
-      updateStats();
-      tickTimer();
-    }
-
-    function tickTimer() {
-      const t = loadTimer();
-      if (!t.start) {
-        document.getElementById("timer-clock").textContent = "60:00";
-        document.getElementById("timer-status").textContent = "No sweep started yet";
-        document.getElementById("timer-sub").textContent = "Open a Tier 1 string to start the timer";
-        document.getElementById("progress-fill").style.width = "100%";
-        return;
-      }
-      const elapsed = Date.now() - t.start;
-      const remaining = Math.max(0, INTERVAL_MS - elapsed);
-      const mins = Math.floor(remaining / 60000);
-      const secs = Math.floor((remaining % 60000) / 1000);
-      const pct = (remaining / INTERVAL_MS) * 100;
-      const clock = document.getElementById("timer-clock");
-      const fill = document.getElementById("progress-fill");
-      clock.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-      if (remaining === 0) {
-        clock.className = "timer-clock urgent";
-        fill.className = "progress-fill urgent";
-        document.getElementById("timer-status").textContent = "⚠ Sweep overdue!";
-        document.getElementById("timer-sub").textContent = "Open Tier 1 strings now";
-        if (!notifFired) { fireNotification(); notifFired = true; }
-      } else if (remaining < 5 * 60 * 1000) {
-        clock.className = "timer-clock urgent";
-        fill.className = "progress-fill urgent";
-        document.getElementById("timer-status").textContent = "Sweep due soon";
-        document.getElementById("timer-sub").textContent = "Get ready to scan Tier 1";
-      } else {
-        clock.className = "timer-clock";
-        fill.className = "progress-fill";
-        document.getElementById("timer-status").textContent = "Next sweep in";
-        document.getElementById("timer-sub").textContent = "Timer resets when you open a string";
-      }
-      fill.style.width = pct + "%";
-    }
-
-    function fireNotification() {
-      if (Notification.permission === "granted") {
-        new Notification("LinkedIn Sweep Due", {
-          body: "60 minutes passed — time to scan Tier 1 strings",
-          icon: "https://www.linkedin.com/favicon.ico",
-        });
-      }
-    }
-
-    function toggleNotifications() {
+  function initNotifyBtn() {
+    if (Notification.permission === "granted") {
       const btn = document.getElementById("notify-btn");
-      if (Notification.permission === "granted") {
-        btn.textContent = "Alerts ON";
-        btn.className = "enabled";
-        return;
-      }
-      Notification.requestPermission().then(p => {
-        if (p === "granted") {
-          btn.textContent = "Alerts ON";
-          btn.className = "enabled";
-        } else {
-          btn.textContent = "Blocked";
-        }
-      });
+      btn.textContent = "🔔 ON"; btn.className = "on";
     }
+  }
 
-    function initNotifyBtn() {
-      const btn = document.getElementById("notify-btn");
-      if (Notification.permission === "granted") {
-        btn.textContent = "Alerts ON";
-        btn.className = "enabled";
-      }
-    }
-
-    // ── Stats ──────────────────────────────────────────────────────────────
-    function updateStats() {
-      const state = loadState();
-      const sweeps = loadSweeps();
-      const now = Date.now();
-      let opened = 0, done = 0, stale = 0;
-      CONFIG.strings.forEach(s => {
-        const entry = state[s.id];
-        if (!entry) return;
-        opened++;
-        const age = now - entry.lastRun;
-        if (age < INTERVAL_MS) done++;
-        else stale++;
-      });
-      if (sweeps.date !== today()) { sweeps.today = 0; }
-      document.getElementById("stat-sweeps").textContent = sweeps.today;
-      document.getElementById("stat-opened").textContent = opened;
-      document.getElementById("stat-done").textContent = done;
-      document.getElementById("stat-stale").textContent = stale;
-    }
-
-    // ── String rows ────────────────────────────────────────────────────────
-    function encodeLinkedInURL(query) {
-      return "https://www.linkedin.com/search/results/content/?keywords=" +
-        encodeURIComponent(query) + "&sortBy=date_posted";
-    }
-
-    function isPriority(tier) { return tier === 1 || tier === 3; }
-
-    function formatAge(ms) {
-      if (ms < 60000) return "just now";
-      const m = Math.floor(ms / 60000);
-      if (m < 60) return `${m}m ago`;
-      const h = Math.floor(m / 60);
-      return `${h}h ago`;
-    }
-
-    function markRun(id) {
-      const state = loadState();
-      state[id] = { lastRun: Date.now() };
-      saveState(state);
-      resetTimer();
-      renderApp();
-      updateStats();
-    }
-
-    function renderApp() {
-      const state = loadState();
-      const now = Date.now();
-      const app = document.getElementById("app");
-      app.innerHTML = "";
-
-      const tierGroups = {};
-      CONFIG.strings.forEach(s => {
-        if (!tierGroups[s.tier]) tierGroups[s.tier] = [];
-        tierGroups[s.tier].push(s);
-      });
-
-      Object.keys(tierGroups).sort().forEach(tierKey => {
-        const tier = Number(tierKey);
-        const t = CONFIG.tiers[tier];
-        const strings = tierGroups[tierKey];
-        const doneCount = strings.filter(s => state[s.id] && (now - state[s.id].lastRun) < INTERVAL_MS).length;
-
-        const section = document.createElement("div");
-        section.className = "tier";
-        section.innerHTML = `<div class="tier-header">${t.label}<span class="tier-action">${t.action}</span><span class="tier-progress">${doneCount}/${strings.length} done</span></div>`;
-
-        strings.forEach(s => {
-          const entry = state[s.id];
-          const age = entry ? now - entry.lastRun : null;
-          const isFresh = age !== null && age < INTERVAL_MS;
-          const isStale = age !== null && age >= INTERVAL_MS;
-          const priority = isPriority(tier);
-
-          let rowClass = "string-row";
-          if (isFresh) rowClass += " done";
-          else if (isStale) rowClass += " stale";
-          else if (priority) rowClass += " priority";
-
-          let dotClass = "status-dot idle";
-          if (isFresh) dotClass = "status-dot fresh";
-          else if (isStale) dotClass = "status-dot stale";
-
-          let lastRunHtml = '<span class="last-run">Never</span>';
-          if (isFresh) lastRunHtml = `<span class="last-run">${formatAge(age)}</span>`;
-          else if (isStale) lastRunHtml = `<span class="last-run stale">${formatAge(age)}</span>`;
-
-          let badgeHtml = "";
-          if (priority && !isFresh) badgeHtml = '<span class="badge badge-blue">Today</span>';
-          if (isFresh) badgeHtml = '<span class="badge badge-green">✓ Done</span>';
-          if (isStale) badgeHtml = '<span class="badge badge-red">Overdue</span>';
-
-          const btnClass = isFresh ? "open-btn done" : "open-btn";
-          const btnText = isFresh ? "Re-run ↗" : "Open ↗";
-
-          const row = document.createElement("div");
-          row.className = rowClass;
-          row.innerHTML = `
-            <span class="status-dot ${isFresh ? "fresh" : isStale ? "stale" : "idle"}"></span>
-            <span class="string-id">${s.id}</span>
-            <span class="string-label">${s.label} ${badgeHtml}</span>
-            ${lastRunHtml}
-            <a class="open-btn ${isFresh ? "done" : ""}" href="${encodeLinkedInURL(s.query)}" target="_blank" rel="noopener" onclick="markRun(${s.id})">${btnText}</a>
-          `;
-          section.appendChild(row);
-        });
-
-        app.appendChild(section);
-      });
-    }
-
-    // ── Quick Log ──────────────────────────────────────────────────────────
-    function quickLog() {
-      const stringId = Number(document.getElementById("ql-string").value);
-      const url = document.getElementById("ql-url").value.trim();
-      const posterTitle = document.getElementById("ql-title").value.trim();
-      const score = document.getElementById("ql-score").value.trim();
-      if (!url && !posterTitle) return;
-
-      const PIPELINE_KEY = "linkedin_pipeline_v1";
-      let leads = [];
-      try { leads = JSON.parse(localStorage.getItem(PIPELINE_KEY)) || []; } catch {}
-      leads.unshift({
-        stringId,
-        url,
-        posterTitle,
-        score: score || "0",
-        status: "hit",
-        date: today(),
-      });
-      localStorage.setItem(PIPELINE_KEY, JSON.stringify(leads));
-      document.getElementById("ql-url").value = "";
-      document.getElementById("ql-title").value = "";
-      document.getElementById("ql-score").value = "";
-      const fb = document.getElementById("log-feedback");
-      fb.style.display = "block";
-      setTimeout(() => { fb.style.display = "none"; }, 2000);
-    }
-
-    // ── Init ───────────────────────────────────────────────────────────────
-    const qlSelect = document.getElementById("ql-string");
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  function updateStats() {
+    const state = loadState();
+    const sw    = loadSweeps();
+    const leads = loadLeads();
+    const now   = Date.now();
+    let done = 0, overdue = 0;
     CONFIG.strings.forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = `#${s.id} — ${s.label}`;
-      qlSelect.appendChild(opt);
+      const e = state[s.id];
+      if (!e) return;
+      if (now - e.lastRun < INTERVAL_MS) done++; else overdue++;
+    });
+    if (sw.date !== todayStr()) sw.today = 0;
+    document.getElementById("s-sweeps").textContent  = sw.today;
+    document.getElementById("s-done").textContent    = done;
+    document.getElementById("s-overdue").textContent = overdue;
+    document.getElementById("s-logged").textContent  = leads.filter(l => l.date === todayStr()).length;
+
+    // update tier tab counts
+    const tierCounts = { all: 0 };
+    CONFIG.strings.forEach(s => {
+      tierCounts.all++;
+      tierCounts[s.tier] = (tierCounts[s.tier] || 0) + 1;
+    });
+    Object.entries(tierCounts).forEach(([k, v]) => {
+      const el = document.getElementById("tc-" + k);
+      if (el) el.textContent = v;
+    });
+  }
+
+  // ── Mark string as run ────────────────────────────────────────────────────
+  function markRun(id) {
+    const state = loadState();
+    state[id] = { lastRun: Date.now() };
+    saveState(state);
+    resetTimer();
+    // show inline log form for this card
+    const form = document.getElementById("log-form-" + id);
+    if (form) { form.classList.add("visible"); }
+    updateStats();
+    // update the card visuals without full re-render
+    refreshCard(id);
+  }
+
+  function refreshCard(id) {
+    const state = loadState();
+    const now = Date.now();
+    const entry = state[id];
+    const card = document.getElementById("card-" + id);
+    if (!card) return;
+    const isFresh  = entry && (now - entry.lastRun) < INTERVAL_MS;
+    const isOverdue= entry && (now - entry.lastRun) >= INTERVAL_MS;
+    card.className = "string-card" + (isFresh ? " is-done" : isOverdue ? " is-overdue" : " is-priority");
+    const pip = card.querySelector(".status-pip");
+    if (pip) pip.className = "status-pip " + (isFresh ? "pip-done" : isOverdue ? "pip-overdue" : "pip-idle");
+    const meta = card.querySelector(".card-meta");
+    if (meta && entry) {
+      const age = now - entry.lastRun;
+      meta.textContent = formatAge(age);
+      meta.className = "card-meta" + (isOverdue ? " overdue" : "");
+    }
+    const btn = card.querySelector(".card-open-btn");
+    if (btn) { btn.textContent = isFresh ? "Re-run ↗" : "Open ↗"; btn.className = "card-open-btn" + (isFresh ? " done" : ""); }
+  }
+
+  // ── Toggle card expand ────────────────────────────────────────────────────
+  function toggleCard(id) {
+    const card = document.getElementById("card-" + id);
+    if (card) card.classList.toggle("open");
+  }
+
+  // ── Log a hit ─────────────────────────────────────────────────────────────
+  function logHit(id) {
+    const url   = document.getElementById("inp-url-"   + id).value.trim();
+    const title = document.getElementById("inp-title-" + id).value.trim();
+    const score = document.getElementById("inp-score-" + id).value.trim();
+    if (!url && !title) return;
+    const leads = loadLeads();
+    leads.unshift({ stringId: id, url, posterTitle: title, score: score || "0", status: "hit", date: todayStr() });
+    saveLeads(leads);
+    document.getElementById("inp-url-"   + id).value = "";
+    document.getElementById("inp-title-" + id).value = "";
+    document.getElementById("inp-score-" + id).value = "";
+    const conf = document.getElementById("log-confirm-" + id);
+    if (conf) { conf.style.display = "block"; setTimeout(() => conf.style.display = "none", 2500); }
+    updateStats();
+  }
+
+  function skipString(id) {
+    const form = document.getElementById("log-form-" + id);
+    if (form) form.classList.remove("visible");
+  }
+
+  // ── Filter ────────────────────────────────────────────────────────────────
+  function filterTier(tier) {
+    currentTier = tier;
+    document.querySelectorAll(".tier-tab").forEach(t => t.classList.toggle("active", t.dataset.tier === tier));
+    renderMain();
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  const TIER_TAGS = {
+    1: { cls: "tag-red",    label: "Act within 2hrs" },
+    2: { cls: "tag-yellow", label: "Offer a teardown" },
+    3: { cls: "tag-blue",   label: "Act within 2hrs" },
+    4: { cls: "tag-gray",   label: "Monitor weekly" },
+  };
+
+  function renderMain() {
+    const state = loadState();
+    const now   = Date.now();
+    const main  = document.getElementById("main-content");
+    main.innerHTML = "";
+
+    const tierGroups = {};
+    CONFIG.strings.forEach(s => {
+      if (currentTier !== "all" && String(s.tier) !== currentTier) return;
+      if (!tierGroups[s.tier]) tierGroups[s.tier] = [];
+      tierGroups[s.tier].push(s);
     });
 
-    initNotifyBtn();
-    renderApp();
-    updateStats();
-    tickTimer();
-    timerInterval = setInterval(() => { tickTimer(); updateStats(); }, 1000);
-  </script>
+    if (Object.keys(tierGroups).length === 0) {
+      main.innerHTML = '<div class="empty-section">No strings in this tier.</div>'; return;
+    }
+
+    Object.keys(tierGroups).sort().forEach(tierKey => {
+      const tier    = Number(tierKey);
+      const t       = CONFIG.tiers[tier];
+      const tag     = TIER_TAGS[tier];
+      const strings = tierGroups[tierKey];
+      const doneCount = strings.filter(s => state[s.id] && (now - state[s.id].lastRun) < INTERVAL_MS).length;
+
+      const section = document.createElement("div");
+
+      // Section header
+      const hdr = document.createElement("div");
+      hdr.className = "section-header";
+      hdr.innerHTML = `
+        <span class="section-title">${t.label}</span>
+        <span class="section-action-tag ${tag.cls}">${tag.label}</span>
+        <span class="section-progress">${doneCount}/${strings.length} done</span>
+      `;
+      section.appendChild(hdr);
+
+      // String cards
+      const list = document.createElement("div");
+      list.className = "string-list";
+
+      strings.forEach(s => {
+        const entry    = state[s.id];
+        const age      = entry ? now - entry.lastRun : null;
+        const isFresh  = age !== null && age < INTERVAL_MS;
+        const isOverdue= age !== null && age >= INTERVAL_MS;
+        const isPrio   = tier === 1 || tier === 3;
+
+        let cardClass = "string-card";
+        if (isFresh)   cardClass += " is-done";
+        else if (isOverdue) cardClass += " is-overdue";
+        else if (isPrio)    cardClass += " is-priority";
+
+        const pipClass = isFresh ? "pip-done" : isOverdue ? "pip-overdue" : "pip-idle";
+        const metaText = age !== null ? formatAge(age) : "Never run";
+        const metaClass= isOverdue ? "card-meta overdue" : "card-meta";
+        const btnClass = isFresh ? "card-open-btn done" : "card-open-btn";
+        const btnText  = isFresh ? "Re-run ↗" : "Open ↗";
+
+        const card = document.createElement("div");
+        card.className = cardClass;
+        card.id = "card-" + s.id;
+
+        card.innerHTML = `
+          <div class="card-summary" onclick="toggleCard(${s.id})">
+            <span class="expand-icon">▶</span>
+            <span class="status-pip ${pipClass}"></span>
+            <span class="card-num">${s.id}</span>
+            <span class="card-label">${s.label}</span>
+            <span class="${metaClass}">${metaText}</span>
+            <a class="${btnClass}"
+               href="${encodeLinkedInURL(s.query)}"
+               target="_blank" rel="noopener"
+               onclick="event.stopPropagation(); markRun(${s.id})">${btnText}</a>
+          </div>
+          <div class="card-detail">
+            <div class="detail-query">${s.query}</div>
+            <div class="detail-row">
+              <span class="detail-hint">Paste into LinkedIn → Posts → sort Latest. ${isPrio ? "Respond within 2hrs of post." : ""}</span>
+            </div>
+            <div class="log-form" id="log-form-${s.id}">
+              <div class="log-form-title">Log a hit from this search</div>
+              <div class="log-inputs">
+                <input class="inp-url"   id="inp-url-${s.id}"   type="url"    placeholder="Post URL" />
+                <input class="inp-title" id="inp-title-${s.id}" type="text"   placeholder="Poster title / company" />
+                <input class="inp-score" id="inp-score-${s.id}" type="number" placeholder="ICP score" min="0" max="100" />
+              </div>
+              <div class="log-btns">
+                <button class="btn-log"  onclick="logHit(${s.id})">✓ Log hit</button>
+                <button class="btn-skip" onclick="skipString(${s.id})">No hits — skip</button>
+              </div>
+              <div class="log-confirm" id="log-confirm-${s.id}">✓ Logged to pipeline</div>
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      section.appendChild(list);
+      main.appendChild(section);
+    });
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  initNotifyBtn();
+  renderMain();
+  updateStats();
+  tickTimer();
+  setInterval(() => { tickTimer(); updateStats(); }, 1000);
+</script>
 </body>
 </html>
