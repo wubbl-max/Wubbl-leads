@@ -1,41 +1,43 @@
 const CONFIG = {
   strings: [
     // Tier 1 — Hottest Intent
+    // Note: after opening in LinkedIn, manually set location filter to your target geos
+    // These strings use -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune to reduce noise
     {
       id: 1,
       tier: 1,
-      label: "Looking for product designer",
-      query: '("looking for" OR "need" OR "hiring") AND ("product designer" OR "product design") AND ("startup" OR "SaaS" OR "fintech" OR "founder")',
+      label: "Looking for product designer (ex-India)",
+      query: '("looking for a product designer" OR "need a product designer" OR "hiring a product designer") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 2,
       tier: 1,
-      label: "Looking for UX/UI designer",
-      query: '("looking for" OR "need" OR "hiring") AND ("UX designer" OR "UI designer" OR "UX/UI" OR "UI/UX") AND ("startup" OR "SaaS" OR "founder")',
+      label: "Looking for UX/UI designer (ex-India)",
+      query: '("looking for a UX designer" OR "need a UX designer" OR "looking for a UI designer" OR "hiring a UX designer") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 3,
       tier: 1,
-      label: "Looking for design agency",
-      query: '("looking for" OR "recommend" OR "anyone know") AND ("design agency" OR "UX agency" OR "branding agency" OR "creative agency") AND ("startup" OR "SaaS" OR "founder")',
+      label: "Looking for design agency (ex-India)",
+      query: '("looking for a design agency" OR "recommend a design agency" OR "anyone know a good design agency" OR "looking for a branding agency") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 4,
       tier: 1,
-      label: "Looking for branding help",
-      query: '("looking for" OR "need help" OR "recommendations") AND ("branding" OR "brand identity" OR "logo" OR "visual identity") AND ("startup" OR "founder" OR "SaaS")',
+      label: "Looking for branding help (ex-India)",
+      query: '("need help with branding" OR "looking for branding" OR "need a brand identity" OR "looking for logo design") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 5,
       tier: 1,
-      label: "Looking for website design/dev",
-      query: '("looking for" OR "need" OR "recommendations") AND ("website design" OR "web design" OR "website redesign" OR "Webflow" OR "Framer") AND ("startup" OR "founder" OR "SaaS")',
+      label: "Looking for website design/dev (ex-India)",
+      query: '("looking for website design" OR "need a website redesign" OR "looking for a Webflow designer" OR "need a web designer") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 6,
       tier: 1,
-      label: "Fresh funding announced",
-      query: '("raised our seed" OR "closed our Series A" OR "announcing our seed round") AND ("SaaS" OR "fintech" OR "B2B")',
+      label: "Fresh funding (ex-India)",
+      query: '("raised our seed" OR "closed our Series A" OR "announcing our seed round") AND ("SaaS" OR "fintech" OR "B2B") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
 
     // Tier 2 — Strong Signal
@@ -54,8 +56,8 @@ const CONFIG = {
     {
       id: 9,
       tier: 2,
-      label: "Asking for design agency / partner recs",
-      query: '("design agency" OR "freelance designer" OR "design partner") AND ("recommendations" OR "anyone know" OR "suggestions")',
+      label: "Asking for design agency / partner recs (ex-India)",
+      query: '("recommend a design agency" OR "anyone know a good designer" OR "looking for a design partner" OR "freelance designer recommendations") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 10,
