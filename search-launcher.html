@@ -216,6 +216,39 @@
     .btn-skip:hover { background: var(--gray-200); }
     .log-confirm { font-size: 11px; color: var(--green); margin-top: 4px; display: none; }
 
+    /* Hits dropdown */
+    .hits-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gray-200); }
+    .hits-toggle {
+      display: flex; align-items: center; gap: 6px; cursor: pointer;
+      font-size: 12px; font-weight: 600; color: var(--gray-600); background: none;
+      border: none; padding: 0; width: 100%; text-align: left;
+    }
+    .hits-toggle:hover { color: var(--blue); }
+    .hits-toggle .hits-count { background: var(--blue); color: white; font-size: 10px; padding: 1px 7px; border-radius: 10px; }
+    .hits-toggle .hits-count.zero { background: var(--gray-200); color: var(--gray-600); }
+    .hits-toggle .hits-arrow { font-size: 9px; color: var(--gray-400); transition: transform 0.15s; }
+    .hits-toggle.open .hits-arrow { transform: rotate(90deg); }
+    .hits-list { display: none; margin-top: 8px; }
+    .hits-list.open { display: block; }
+    .hit-row {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+      background: white; border: 1px solid var(--gray-100); border-radius: 6px;
+      margin-bottom: 4px; font-size: 12px;
+    }
+    .hit-row .hit-title { flex: 1; color: var(--gray-900); font-weight: 500; }
+    .hit-row .hit-score { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
+    .hit-score.q  { background: var(--green-light); color: var(--green); }
+    .hit-score.nq { background: var(--red-light);   color: var(--red); }
+    .hit-row .hit-status { font-size: 10px; color: var(--gray-400); background: var(--gray-100); padding: 2px 6px; border-radius: 8px; }
+    .hit-row .hit-link { font-size: 11px; color: var(--blue); text-decoration: none; white-space: nowrap; }
+    .hit-row .hit-link:hover { text-decoration: underline; }
+    .hit-row .hit-date { font-size: 10px; color: var(--gray-400); white-space: nowrap; }
+    .hits-empty { font-size: 11px; color: var(--gray-400); padding: 6px 0; }
+
+    /* Active search — dim inactive cards */
+    .string-card.inactive { opacity: 0.45; pointer-events: none; }
+    .string-card.active-search { border-color: var(--blue) !important; box-shadow: 0 0 0 2px rgba(0,119,181,0.15); }
+
     /* Empty state */
     .empty-section { text-align: center; padding: 32px; color: var(--gray-400); font-size: 13px; }
   </style>
@@ -299,8 +332,9 @@
   const PIPELINE_KEY = "linkedin_pipeline_v1";
   const INTERVAL_MS  = 60 * 60 * 1000;
 
-  let currentTier = "all";
-  let notifFired  = false;
+  let currentTier   = "all";
+  let notifFired    = false;
+  let activeSearchId = null; // only one string active at a time
 
   // ── Storage helpers ──────────────────────────────────────────────────────
   function loadState()  { try { return JSON.parse(localStorage.getItem(STORAGE_KEY))  || {}; } catch { return {}; } }
@@ -415,18 +449,49 @@
     });
   }
 
-  // ── Mark string as run ────────────────────────────────────────────────────
+  // ── Mark string as run + set as the one active search ───────────────────
   function markRun(id) {
     const state = loadState();
     state[id] = { lastRun: Date.now() };
     saveState(state);
     resetTimer();
-    // show inline log form for this card
+
+    // Only one active search at a time — dim all others
+    activeSearchId = id;
+    document.querySelectorAll(".string-card").forEach(c => {
+      const cid = Number(c.id.replace("card-", ""));
+      if (cid === id) {
+        c.classList.remove("inactive");
+        c.classList.add("active-search");
+        c.classList.add("open"); // auto-expand
+      } else {
+        c.classList.add("inactive");
+        c.classList.remove("active-search");
+      }
+    });
+
     const form = document.getElementById("log-form-" + id);
-    if (form) { form.classList.add("visible"); }
+    if (form) form.classList.add("visible");
     updateStats();
-    // update the card visuals without full re-render
     refreshCard(id);
+  }
+
+  // ── Stop active search — re-enable all cards ──────────────────────────────
+  function stopSearch() {
+    activeSearchId = null;
+    document.querySelectorAll(".string-card").forEach(c => {
+      c.classList.remove("inactive", "active-search");
+    });
+    renderMain(); // full re-render to reset state
+  }
+
+  // ── Toggle hits dropdown ──────────────────────────────────────────────────
+  function toggleHits(id) {
+    const btn  = document.getElementById("hits-toggle-" + id);
+    const list = document.getElementById("hits-list-" + id);
+    if (!btn || !list) return;
+    btn.classList.toggle("open");
+    list.classList.toggle("open");
   }
 
   function refreshCard(id) {
@@ -471,6 +536,44 @@
     const conf = document.getElementById("log-confirm-" + id);
     if (conf) { conf.style.display = "block"; setTimeout(() => conf.style.display = "none", 2500); }
     updateStats();
+    // refresh hits list inline without full re-render
+    refreshHits(id);
+  }
+
+  function refreshHits(id) {
+    const allLeads   = loadLeads();
+    const stringHits = allLeads.filter(l => Number(l.stringId) === id);
+    const hitCount   = stringHits.length;
+    const toggle     = document.getElementById("hits-toggle-" + id);
+    const list       = document.getElementById("hits-list-"   + id);
+    if (!toggle || !list) return;
+    const badge = toggle.querySelector(".hits-count");
+    if (badge) { badge.textContent = hitCount; badge.className = "hits-count" + (hitCount > 0 ? "" : " zero"); }
+    const hitsHtml = hitCount === 0
+      ? `<div class="hits-empty">No hits logged yet.</div>`
+      : stringHits.map(l => {
+          const scoreNum = Number(l.score);
+          const scoreClass = scoreNum >= CONFIG.qualifiedThreshold ? "q" : "nq";
+          const linkHtml = l.url
+            ? `<a class="hit-link" href="${l.url}" target="_blank" rel="noopener">View ↗</a>`
+            : `<span class="hit-date">—</span>`;
+          return `<div class="hit-row">
+            <span class="hit-title">${l.posterTitle || "Unknown"}</span>
+            <span class="hit-score ${scoreClass}">${l.score}</span>
+            <span class="hit-status">${l.status}</span>
+            ${linkHtml}
+            <span class="hit-date">${l.date}</span>
+          </div>`;
+        }).join("");
+    list.innerHTML = hitsHtml;
+    list.classList.add("open");
+    toggle.classList.add("open");
+    // update summary hit count
+    const card = document.getElementById("card-" + id);
+    if (card) {
+      const hitSpan = card.querySelector(".card-summary span[data-hits]");
+      if (hitSpan) hitSpan.textContent = `${hitCount} hit${hitCount > 1 ? "s" : ""}`;
+    }
   }
 
   function skipString(id) {
@@ -555,12 +658,36 @@
         card.className = cardClass;
         card.id = "card-" + s.id;
 
+        // Build hits for this string
+        const allLeads = loadLeads();
+        const stringHits = allLeads.filter(l => Number(l.stringId) === s.id);
+        const hitCount = stringHits.length;
+        const hitCountClass = hitCount > 0 ? "" : "zero";
+
+        const hitsHtml = hitCount === 0
+          ? `<div class="hits-empty">No hits logged yet for this string.</div>`
+          : stringHits.map(l => {
+              const scoreNum = Number(l.score);
+              const scoreClass = scoreNum >= CONFIG.qualifiedThreshold ? "q" : "nq";
+              const linkHtml = l.url
+                ? `<a class="hit-link" href="${l.url}" target="_blank" rel="noopener">View ↗</a>`
+                : `<span class="hit-date">—</span>`;
+              return `<div class="hit-row">
+                <span class="hit-title">${l.posterTitle || "Unknown"}</span>
+                <span class="hit-score ${scoreClass}">${l.score}</span>
+                <span class="hit-status">${l.status}</span>
+                ${linkHtml}
+                <span class="hit-date">${l.date}</span>
+              </div>`;
+            }).join("");
+
         card.innerHTML = `
           <div class="card-summary" onclick="toggleCard(${s.id})">
             <span class="expand-icon">▶</span>
             <span class="status-pip ${pipClass}"></span>
             <span class="card-num">${s.id}</span>
             <span class="card-label">${s.label}</span>
+            ${hitCount > 0 ? `<span style="font-size:11px;color:var(--blue);font-weight:600;white-space:nowrap">${hitCount} hit${hitCount > 1 ? "s" : ""}</span>` : ""}
             <span class="${metaClass}">${metaText}</span>
             <a class="${btnClass}"
                href="${encodeLinkedInURL(s.query)}"
@@ -571,9 +698,24 @@
             <div class="detail-query">${s.query}</div>
             <div class="detail-row">
               <span class="detail-hint">Paste into LinkedIn → Posts → sort Latest. ${isPrio ? "Respond within 2hrs of post." : ""}</span>
+              <button class="btn-skip" style="margin-left:auto" onclick="stopSearch()">✕ Stop search</button>
             </div>
+
+            <!-- Hits dropdown -->
+            <div class="hits-section">
+              <button class="hits-toggle" id="hits-toggle-${s.id}" onclick="toggleHits(${s.id})">
+                <span class="hits-arrow">▶</span>
+                Hits from this string
+                <span class="hits-count ${hitCountClass}">${hitCount}</span>
+              </button>
+              <div class="hits-list" id="hits-list-${s.id}">
+                ${hitsHtml}
+              </div>
+            </div>
+
+            <!-- Log form -->
             <div class="log-form" id="log-form-${s.id}">
-              <div class="log-form-title">Log a hit from this search</div>
+              <div class="log-form-title">Log a new hit</div>
               <div class="log-inputs">
                 <input class="inp-url"   id="inp-url-${s.id}"   type="url"    placeholder="Post URL" />
                 <input class="inp-title" id="inp-title-${s.id}" type="text"   placeholder="Poster title / company" />
