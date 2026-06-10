@@ -1,37 +1,38 @@
 const CONFIG = {
   strings: [
     // Tier 1 — Hottest Intent
-    // -hiring -"job opening" -"apply now" -"we are hiring" excludes job posts
-    // -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune excludes Indian noise
+    // Job post exclusions: -"OpenToWork" -"open to work" -"seeking a role" -"new role" -"view job"
+    //                      -hiring -"job opening" -"apply now" -"we are hiring" -"job description"
+    // Geo exclusions: -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune
     {
       id: 1,
       tier: 1,
-      label: "Looking for product designer (ex-India, ex-jobs)",
-      query: '("looking for a product designer" OR "need a product designer" OR "recommend a product designer") -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for product designer",
+      query: '("looking for a product designer" OR "need a product designer" OR "recommend a product designer") -"OpenToWork" -"open to work" -"seeking a role" -"new role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 2,
       tier: 1,
-      label: "Looking for UX/UI designer (ex-India, ex-jobs)",
-      query: '("looking for a UX designer" OR "need a UX designer" OR "looking for a UI designer" OR "recommend a UX designer") -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for UX/UI designer",
+      query: '("looking for a UX designer" OR "need a UX designer" OR "looking for a UI designer" OR "recommend a UX designer") -"OpenToWork" -"open to work" -"seeking a role" -"new role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 3,
       tier: 1,
-      label: "Looking for design agency (ex-India, ex-jobs)",
-      query: '("looking for a design agency" OR "recommend a design agency" OR "anyone know a good design agency" OR "looking for a branding agency") -hiring -"job opening" -"apply now" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for design agency",
+      query: '("looking for a design agency" OR "recommend a design agency" OR "anyone know a good design agency" OR "looking for a branding agency") -"OpenToWork" -"open to work" -"view job" -hiring -"job opening" -"apply now" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 4,
       tier: 1,
-      label: "Looking for branding help (ex-India, ex-jobs)",
-      query: '("need help with branding" OR "looking for branding" OR "need a brand identity" OR "looking for logo design") -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for branding help",
+      query: '("need help with branding" OR "looking for branding" OR "need a brand identity" OR "looking for logo design") -"OpenToWork" -"open to work" -"seeking a role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 5,
       tier: 1,
-      label: "Looking for website design/dev (ex-India, ex-jobs)",
-      query: '("looking for website design" OR "need a website redesign" OR "looking for a Webflow designer" OR "need a web designer") -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for website design/dev",
+      query: '("looking for website design" OR "need a website redesign" OR "looking for a Webflow designer" OR "need a web designer") -"OpenToWork" -"open to work" -"seeking a role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
     },
     {
       id: 6,
