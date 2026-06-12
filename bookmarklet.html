@@ -54,8 +54,8 @@
 
     <div class="config-area">
       <label class="config-label" for="username-input">GitHub Username</label>
-      <input class="config-input" type="text" id="username-input" value="jayesh" placeholder="Your GitHub Username" />
-      <div class="config-hint">This ensures saved leads are routed to your deployed GitHub Pages domain (<code>https://&lt;username&gt;.github.io/linkedin-prospecting-tool/</code>)</div>
+      <input class="config-input" type="text" id="username-input" value="wubbl-max" placeholder="Your GitHub Username" />
+      <div class="config-hint">Leads will be saved to <code>https://wubbl-max.github.io/wubbl-leads/</code></div>
     </div>
 
     <div class="drag-area">
@@ -223,7 +223,7 @@
   document.head.appendChild(style);
 
   var iframe = document.createElement('iframe');
-  iframe.src = 'https://GITHUB_USERNAME.github.io/linkedin-prospecting-tool/receiver.html';
+  iframe.src = 'https://GITHUB_USERNAME.github.io/wubbl-leads/receiver.html';
   iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;display:none;';
   document.body.appendChild(iframe);
 
@@ -501,7 +501,7 @@
 
     function updateBookmarklet() {
       const usernameInput = document.getElementById("username-input");
-      const username = usernameInput.value.trim().toLowerCase() || "jayesh";
+      const username = usernameInput.value.trim().toLowerCase() || "wubbl-max";
       
       const compiledCode = bookmarkletTemplate.replace(/GITHUB_USERNAME/g, username);
       const encoded = "javascript:" + encodeURIComponent(compiledCode);
