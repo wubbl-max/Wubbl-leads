@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pipeline Data Receiver</title>
+</head>
+<body>
+  <script>
+    const STORAGE_KEY = "linkedin_pipeline_v1";
+
+    window.addEventListener("message", function(event) {
+      // Security: Validate origin is LinkedIn
+      const allowedOrigins = [
+        "https://www.linkedin.com",
+        "https://linkedin.com"
+      ];
+      
+      const isAllowed = allowedOrigins.some(origin => event.origin === origin || event.origin.endsWith(".linkedin.com"));
+      if (!isAllowed) {
+        console.warn("Rejected postMessage from unauthorized origin:", event.origin);
+        return;
+      }
+
+      const data = event.data;
+      if (data && data.action === "save_lead" && data.lead) {
+        let existing = [];
+        try {
+          existing = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        } catch (e) {
+          console.error("Error reading localStorage:", e);
+        }
+
+        existing.unshift(data.lead);
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+          // Respond back to confirm saving
+          event.source.postMessage({ action: "save_confirm", success: true }, event.origin);
+        } catch (e) {
+          console.error("Error writing to localStorage:", e);
+          event.source.postMessage({ action: "save_confirm", success: false, error: e.message }, event.origin);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

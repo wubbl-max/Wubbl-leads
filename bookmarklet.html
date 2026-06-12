@@ -7,11 +7,18 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; background: #f6f8fa; color: #1f2328; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-    .card { background: white; border: 1px solid #d0d7de; border-radius: 12px; padding: 36px 40px; max-width: 540px; width: 100%; text-align: center; }
-    h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-    .sub { font-size: 14px; color: #57606a; margin-bottom: 32px; line-height: 1.5; }
-    .drag-area { margin-bottom: 32px; }
-    .drag-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8c959f; margin-bottom: 12px; }
+    .card { background: white; border: 1px solid #d0d7de; border-radius: 12px; padding: 36px 40px; max-width: 580px; width: 100%; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #0077b5; }
+    .sub { font-size: 14px; color: #57606a; margin-bottom: 24px; line-height: 1.5; }
+    
+    .config-area { margin-bottom: 24px; background: #f6f8fa; border: 1px solid #eaeef2; border-radius: 8px; padding: 16px 20px; text-align: left; }
+    .config-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #57606a; margin-bottom: 8px; display: block; }
+    .config-input { width: 100%; padding: 8px 12px; font-size: 14px; border: 1px solid #d0d7de; border-radius: 6px; font-family: inherit; }
+    .config-input:focus { outline: none; border-color: #0077b5; }
+    .config-hint { font-size: 11px; color: #8c959f; margin-top: 6px; line-height: 1.4; }
+
+    .drag-area { margin-bottom: 32px; padding: 20px; border: 2px dashed #0077b5; border-radius: 8px; background: #e8f4fb; }
+    .drag-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0077b5; margin-bottom: 12px; }
     .bookmarklet-btn {
       display: inline-block;
       padding: 10px 22px;
@@ -22,18 +29,19 @@
       border-radius: 8px;
       text-decoration: none;
       cursor: grab;
-      border: 2px dashed transparent;
-      transition: border-color 0.15s, background 0.15s;
+      border: 2px solid transparent;
+      transition: background 0.15s;
       user-select: none;
     }
-    .bookmarklet-btn:hover { background: #005f8e; border-color: #005f8e; }
+    .bookmarklet-btn:hover { background: #005f8e; }
     .drag-hint { font-size: 12px; color: #8c959f; margin-top: 10px; }
+    
     .steps { text-align: left; background: #f6f8fa; border: 1px solid #eaeef2; border-radius: 8px; padding: 20px 24px; margin-bottom: 24px; }
     .steps h2 { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
     .steps ol { padding-left: 18px; display: flex; flex-direction: column; gap: 10px; }
     .steps li { font-size: 13px; color: #1f2328; line-height: 1.5; }
     .steps li strong { color: #0077b5; }
-    .steps code { background: #eaeef2; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    
     .note { font-size: 12px; color: #57606a; background: #fff8c5; border: 1px solid #d4a72c; border-radius: 6px; padding: 10px 14px; margin-bottom: 24px; text-align: left; line-height: 1.5; }
     .back { font-size: 13px; color: #0077b5; text-decoration: none; }
     .back:hover { text-decoration: underline; }
@@ -41,156 +49,471 @@
 </head>
 <body>
   <div class="card">
-    <h1>Quick-Add to Pipeline</h1>
-    <p class="sub">One-click bookmarklet. While browsing LinkedIn, click it to instantly save a post URL to your pipeline — no copy-pasting.</p>
+    <h1>LinkedIn Prospector Bookmarklet</h1>
+    <p class="sub">One-click extension. Configure your GitHub username, drag to bookmarks, and start prospecting directly on LinkedIn.</p>
+
+    <div class="config-area">
+      <label class="config-label" for="username-input">GitHub Username</label>
+      <input class="config-input" type="text" id="username-input" value="jayesh" placeholder="Your GitHub Username" />
+      <div class="config-hint">This ensures saved leads are routed to your deployed GitHub Pages domain (<code>https://&lt;username&gt;.github.io/linkedin-prospecting-tool/</code>)</div>
+    </div>
 
     <div class="drag-area">
       <div class="drag-label">Drag this to your bookmarks bar</div>
-      <a class="bookmarklet-btn" id="bookmarklet-link" href="#loading">+ Add to Pipeline</a>
+      <a class="bookmarklet-btn" id="bookmarklet-link" href="#loading">＋ Add to Pipeline</a>
       <div class="drag-hint">Drag the blue button above to your browser's bookmarks bar</div>
     </div>
 
     <div class="steps">
       <h2>How to use</h2>
       <ol>
-        <li>Drag the blue button above to your <strong>bookmarks bar</strong></li>
-        <li>Browse LinkedIn and open any post you're interested in</li>
-        <li>Click <strong>"+ Add to Pipeline"</strong> in your bookmarks bar</li>
-        <li>A form will pop up — fill in the poster's title and ICP score</li>
-        <li>Click <strong>Save</strong> — it's logged in your pipeline</li>
-        <li>Open <code>index.html</code> → Pipeline tab to review it</li>
+        <li>Type your GitHub username above.</li>
+        <li>Drag the blue <strong>"＋ Add to Pipeline"</strong> button to your bookmarks bar.</li>
+        <li>Browse LinkedIn (Feed or Search page).</li>
+        <li>Click <strong>"＋ Add to Pipeline"</strong> in your bookmarks bar to activate hover chips.</li>
+        <li>Hover over any post to see the blue <strong>"＋"</strong> icon in the top right.</li>
+        <li>Click <strong>"＋"</strong> to open a pre-filled scraping modal, and click **Save**.</li>
       </ol>
     </div>
 
     <div class="note">
-      <strong>Note:</strong> The pipeline data is stored in your browser's localStorage. Both this bookmarklet and <code>index.html</code> must be opened in the same browser (same profile) for the data to be shared.
+      <strong>Note:</strong> Data is synchronized using a secure iframe messaging bridge. Leads saved on LinkedIn will appear in the pipeline on your deployed GitHub Pages domain.
     </div>
 
     <a href="index.html" class="back">← Back to app</a>
   </div>
 
   <script>
-    // Build the bookmarklet source
-    const STORAGE_KEY = "linkedin_pipeline_v1";
-    const QUALIFIED_THRESHOLD = 60;
-
-    // The bookmarklet script — must be a single self-contained JS expression
-    const bookmarkletCode = `(function(){
-  var url=window.location.href;
-  if(!url.includes('linkedin.com')){alert('Open a LinkedIn post first, then click this bookmark.');return;}
-  var existing=[];
-  try{existing=JSON.parse(localStorage.getItem('linkedin_pipeline_v1'))||[];}catch(e){}
-
-  // Build overlay
-  var ov=document.createElement('div');
-  ov.id='__qap_overlay';
-  ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
-
-  var box=document.createElement('div');
-  box.style.cssText='background:white;border-radius:12px;padding:28px 28px 24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
-
-  var title=document.createElement('h2');
-  title.textContent='Add to Pipeline';
-  title.style.cssText='font-size:17px;font-weight:700;color:#1f2328;margin-bottom:4px;';
-
-  var urlPreview=document.createElement('p');
-  urlPreview.textContent=url.length>60?url.slice(0,60)+'…':url;
-  urlPreview.style.cssText='font-size:11px;color:#8c959f;margin-bottom:20px;word-break:break-all;';
-
-  function field(lbl,id,type,placeholder,extra){
-    var wrap=document.createElement('div');
-    wrap.style.cssText='margin-bottom:14px;';
-    var l=document.createElement('label');
-    l.textContent=lbl;
-    l.style.cssText='display:block;font-size:11px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;';
-    l.htmlFor=id;
-    var inp=document.createElement(type==='select'?'select':'input');
-    inp.id=id;
-    if(type!=='select'){inp.type=type||'text';inp.placeholder=placeholder||'';}
-    inp.style.cssText='width:100%;padding:8px 10px;font-size:13px;border:1px solid #d0d7de;border-radius:6px;font-family:inherit;';
-    inp.onfocus=function(){this.style.borderColor='#0077b5';};
-    inp.onblur=function(){this.style.borderColor='#d0d7de';};
-    if(extra)extra(inp);
-    wrap.appendChild(l);
-    wrap.appendChild(inp);
-    return wrap;
+    const bookmarkletTemplate = `(function(){
+  var url = window.location.href;
+  if (!url.includes('linkedin.com')) {
+    alert('Please run this bookmarklet while browsing linkedin.com');
+    return;
   }
 
-  var titleField=field('Poster Title','__qap_title','text','e.g. Founder @ Acme');
-  var scoreField=field('ICP Score (0–100)','__qap_score','number','e.g. 75');
-  document.getElementById&&(function(){})();
+  if (window.__linkedin_prospector_active) {
+    alert('LinkedIn Prospector is already running on this page.');
+    return;
+  }
+  window.__linkedin_prospector_active = true;
 
-  var stringWrap=document.createElement('div');
-  stringWrap.style.cssText='margin-bottom:14px;';
-  var stringLabel=document.createElement('label');
-  stringLabel.textContent='Matched String (optional)';
-  stringLabel.style.cssText='display:block;font-size:11px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;';
-  var stringSel=document.createElement('select');
-  stringSel.id='__qap_string';
-  stringSel.style.cssText='width:100%;padding:8px 10px;font-size:13px;border:1px solid #d0d7de;border-radius:6px;font-family:inherit;background:white;';
-  var strOpt=document.createElement('option');
-  strOpt.value='';strOpt.textContent='— none —';
-  stringSel.appendChild(strOpt);
-  var strings=[[1,'Looking for product designer'],[2,'Looking for UX/UI designer'],[3,'Looking for design agency'],[4,'Looking for branding help'],[5,'Looking for website design/dev'],[6,'Fresh funding (ex-India)'],[7,'Activation / churn pain'],[8,'Product redesign intent'],[9,'Asking for design recs'],[10,'Design system need'],[11,'Pre-launch / MVP'],[12,'Tech founders no design'],[13,'Website not converting'],[14,'Brand identity / logo need'],[15,'No designer pain'],[16,'Webflow / Framer help'],[17,'Funding London/SG/CH/DE'],[18,'Seed/A in key cities'],[19,'Designer hire target geos'],[20,'Brand/website redesign geos'],[21,'Fractional design partner'],[22,'Unhappy with agency'],[23,'PLG + design need']];
-  strings.forEach(function(s){var o=document.createElement('option');o.value=s[0];o.textContent='#'+s[0]+' — '+s[1];stringSel.appendChild(o);});
-  stringWrap.appendChild(stringLabel);
-  stringWrap.appendChild(stringSel);
+  var style = document.createElement('style');
+  style.innerHTML = \`
+    .__prospect_chip {
+      position: absolute;
+      top: 12px;
+      right: 48px;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #0077b5;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+      transition: background 0.1s, transform 0.1s;
+    }
+    .__prospect_chip:hover {
+      background: #005f8e;
+      transform: scale(1.1);
+    }
+    .feed-shared-update-v2, [data-urn^="urn:li:activity:"], .update-components-actor, .search-relevance-card__relevance-choice-card, .search-entity-outlet {
+      position: relative !important;
+    }
+    .feed-shared-update-v2:hover .__prospect_chip,
+    [data-urn^="urn:li:activity:"]:hover .__prospect_chip,
+    .update-components-actor:hover .__prospect_chip,
+    .search-relevance-card__relevance-choice-card:hover .__prospect_chip,
+    .search-entity-outlet:hover .__prospect_chip {
+      display: flex !important;
+    }
+    .__prospect_modal_overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .__prospect_modal {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 440px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      box-sizing: border-box;
+      color: #1f2328;
+    }
+    .__prospect_modal h3 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0077b5;
+    }
+    .__prospect_modal .subtitle {
+      margin: 0 0 16px 0;
+      font-size: 11px;
+      color: #8c959f;
+      word-break: break-all;
+    }
+    .__prospect_modal label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: #57606a;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .__prospect_modal input, .__prospect_modal select {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 13px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    .__prospect_modal input:focus, .__prospect_modal select:focus {
+      outline: none;
+      border-color: #0077b5;
+    }
+    .__prospect_modal_btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .__prospect_modal_btns button {
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+    }
+    .__prospect_save_btn {
+      flex: 1;
+      background: #0077b5;
+      color: white;
+    }
+    .__prospect_save_btn:hover {
+      background: #005f8e;
+    }
+    .__prospect_cancel_btn {
+      background: #eaeef2;
+      color: #57606a;
+    }
+    .__prospect_cancel_btn:hover {
+      background: #d0d7de;
+    }
+  \`;
+  document.head.appendChild(style);
 
-  var btnRow=document.createElement('div');
-  btnRow.style.cssText='display:flex;gap:10px;margin-top:6px;';
+  var iframe = document.createElement('iframe');
+  iframe.src = 'https://GITHUB_USERNAME.github.io/linkedin-prospecting-tool/receiver.html';
+  iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;display:none;';
+  document.body.appendChild(iframe);
 
-  var saveBtn=document.createElement('button');
-  saveBtn.textContent='Save to Pipeline';
-  saveBtn.style.cssText='flex:1;padding:10px;font-size:13px;font-weight:700;background:#0077b5;color:white;border:none;border-radius:6px;cursor:pointer;';
-  saveBtn.onmouseover=function(){this.style.background='#005f8e';};
-  saveBtn.onmouseout=function(){this.style.background='#0077b5';};
-
-  var cancelBtn=document.createElement('button');
-  cancelBtn.textContent='Cancel';
-  cancelBtn.style.cssText='padding:10px 16px;font-size:13px;background:#eaeef2;color:#57606a;border:none;border-radius:6px;cursor:pointer;';
-
-  saveBtn.onclick=function(){
-    var posterTitle=document.getElementById('__qap_title').value.trim();
-    var scoreVal=document.getElementById('__qap_score').value.trim();
-    var stringId=document.getElementById('__qap_string').value;
-    var lead={
-      stringId:stringId?Number(stringId):1,
-      url:url,
-      posterTitle:posterTitle||'(from bookmarklet)',
-      score:scoreVal||'0',
-      status:'hit',
-      date:new Date().toISOString().slice(0,10)
-    };
-    existing.unshift(lead);
-    localStorage.setItem('linkedin_pipeline_v1',JSON.stringify(existing));
-    box.innerHTML='';
-    var ok=document.createElement('div');
-    ok.style.cssText='text-align:center;padding:20px 0;';
-    ok.innerHTML='<div style="font-size:40px;margin-bottom:12px">✓</div><div style="font-size:16px;font-weight:700;color:#1a7f37;">Saved to Pipeline</div><div style="font-size:13px;color:#57606a;margin-top:6px;">Open index.html → Pipeline tab to review</div>';
-    box.appendChild(ok);
-    setTimeout(function(){if(document.getElementById('__qap_overlay'))document.body.removeChild(ov);},1800);
+  var scoringRules = {
+    hiringDesigner: { weight: 25, keywords: ["looking for", "need a designer", "hiring", "design hire", "first design hire", "ux designer", "ui designer", "product designer", "ux/ui", "ui/ux", "design agency", "branding agency", "creative agency", "website design", "web design"] },
+    fundingAnnounced: { weight: 20, keywords: ["raised", "seed", "series a", "series b", "funding", "closed our", "announcing our"] },
+    founderPoster: { weight: 15, keywords: ["founder", "ceo", "cto", "co-founder", "chief", "president"] },
+    icpVertical: { weight: 15, keywords: ["saas", "fintech", "b2b", "startup", "software", "tech startup"] },
+    designIntent: { weight: 10, keywords: ["rebrand", "redesign", "new website", "brand refresh", "visual identity", "webflow", "framer", "logo", "brand identity"] },
+    geoMatch: { weight: 10, keywords: ["london", "singapore", "switzerland", "germany", "zurich", "berlin", "frankfurt", "dubai", "bangalore", "pune", "lagos", "nairobi", "cairo"] },
+    painLanguage: { weight: 5, keywords: ["struggling", "no designer", "without a designer", "design is a mess", "drop-off", "not converting", "bounce rate", "churn", "need help"] }
   };
 
-  cancelBtn.onclick=function(){document.body.removeChild(ov);};
-  ov.onclick=function(e){if(e.target===ov)document.body.removeChild(ov);};
+  function calculateScore(text) {
+    var lower = text.toLowerCase();
+    var score = 0;
+    for (var key in scoringRules) {
+      var rule = scoringRules[key];
+      var fired = rule.keywords.some(function(kw) { return lower.includes(kw); });
+      if (fired) score = Math.min(100, score + rule.weight);
+    }
+    return score;
+  }
 
-  btnRow.appendChild(saveBtn);
-  btnRow.appendChild(cancelBtn);
+  var stringsList = [
+    [1, "Looking for product designer"],
+    [2, "Looking for UX/UI designer"],
+    [3, "Looking for design agency"],
+    [4, "Looking for branding help"],
+    [5, "Looking for website design/dev"],
+    [6, "Fresh funding (ex-India)"],
+    [7, "Activation / churn pain"],
+    [8, "Product redesign intent"],
+    [9, "Asking for design recs"],
+    [10, "Design system need"],
+    [11, "Pre-launch / MVP"],
+    [12, "Tech founders no design"],
+    [13, "Website not converting"],
+    [14, "Brand identity / logo need"],
+    [15, "No designer pain"],
+    [16, "Webflow / Framer help"],
+    [17, "Funding London/SG/CH/DE"],
+    [18, "Seed/A in key cities"],
+    [19, "Designer hire target geos"],
+    [20, "Brand/website redesign geos"],
+    [21, "Fractional design partner"],
+    [22, "Unhappy with agency"],
+    [23, "PLG + design need"]
+  ];
 
-  box.appendChild(title);
-  box.appendChild(urlPreview);
-  box.appendChild(titleField);
-  box.appendChild(scoreField);
-  box.appendChild(stringWrap);
-  box.appendChild(btnRow);
-  ov.appendChild(box);
-  document.body.appendChild(ov);
-  setTimeout(function(){var t=document.getElementById('__qap_title');if(t)t.focus();},50);
+  function matchString(text) {
+    var lower = text.toLowerCase();
+    if (lower.includes("product designer") || lower.includes("product design")) return 1;
+    if (lower.includes("ux designer") || lower.includes("ui designer") || lower.includes("ux/ui") || lower.includes("ui/ux")) return 2;
+    if (lower.includes("design agency") || lower.includes("branding agency") || lower.includes("creative agency")) return 3;
+    if (lower.includes("branding") || lower.includes("brand identity") || lower.includes("logo")) return 4;
+    if (lower.includes("website design") || lower.includes("web design") || lower.includes("web designer") || lower.includes("website redesign")) return 5;
+    if (lower.includes("raised") || lower.includes("funding") || lower.includes("series a") || lower.includes("seed")) return 6;
+    if (lower.includes("churn") || lower.includes("drop-off") || lower.includes("activation")) return 7;
+    if (lower.includes("redesign") || lower.includes("revamp")) return 8;
+    if (lower.includes("design partner") || lower.includes("freelance designer")) return 9;
+    if (lower.includes("design system") || lower.includes("design tokens")) return 10;
+    if (lower.includes("mvp") || lower.includes("pre-launch") || lower.includes("launching soon")) return 11;
+    if (lower.includes("technical founder") || lower.includes("non-designer")) return 12;
+    if (lower.includes("not converting") || lower.includes("bounce rate")) return 13;
+    if (lower.includes("brand identity") || lower.includes("logo design")) return 14;
+    if (lower.includes("no designer") || lower.includes("without a designer")) return 15;
+    if (lower.includes("webflow") || lower.includes("framer")) return 16;
+    if (lower.includes("london") || lower.includes("singapore") || lower.includes("germany") || lower.includes("switzerland")) return 17;
+    if (lower.includes("zurich") || lower.includes("berlin") || lower.includes("frankfurt")) return 18;
+    if (lower.includes("hiring designer") || lower.includes("design hire")) return 19;
+    if (lower.includes("website refresh") || lower.includes("website redesign")) return 20;
+    if (lower.includes("fractional design") || lower.includes("design partner")) return 21;
+    if (lower.includes("unhappy") || lower.includes("disappointed")) return 22;
+    if (lower.includes("plg") || lower.includes("product-led")) return 23;
+    return 1;
+  }
+
+  function processPost(postEl) {
+    if (postEl.querySelector('.__prospect_chip')) return;
+
+    var chip = document.createElement('button');
+    chip.className = '__prospect_chip';
+    chip.textContent = '＋';
+    chip.title = 'Add to LinkedIn Pipeline';
+    
+    chip.addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      openModalForPost(postEl);
+    });
+
+    postEl.appendChild(chip);
+  }
+
+  function openModalForPost(postEl) {
+    var textEl = postEl.querySelector('.update-components-text') || 
+                 postEl.querySelector('.feed-shared-update-v2__commentary') || 
+                 postEl.querySelector('.feed-shared-text') || 
+                 postEl;
+    var postText = textEl ? textEl.innerText.trim() : '';
+
+    var nameEl = postEl.querySelector('.update-components-actor__title') ||
+                 postEl.querySelector('.feed-shared-actor__title') ||
+                 postEl.querySelector('.feed-shared-actor__name') ||
+                 postEl.querySelector('span[class*="actor__name"]');
+    var posterTitle = nameEl ? nameEl.innerText.trim().replace(/\\n/g, ' ') : '';
+
+    var postUrl = '';
+    var urnAttr = postEl.getAttribute('data-urn');
+    if (urnAttr) {
+      postUrl = 'https://www.linkedin.com/feed/update/' + urnAttr;
+    } else {
+      var linkEls = postEl.querySelectorAll('a');
+      for (var i = 0; i < linkEls.length; i++) {
+        var href = linkEls[i].href;
+        if (href.includes('/feed/update/urn:li:activity:') || href.includes('/feed/update/urn:li:share:')) {
+          postUrl = href;
+          break;
+        }
+      }
+    }
+    if (!postUrl) {
+      postUrl = window.location.href;
+    }
+
+    var score = calculateScore(postText);
+    var matchedStringId = matchString(postText);
+
+    var overlay = document.createElement('div');
+    overlay.className = '__prospect_modal_overlay';
+
+    var modal = document.createElement('div');
+    modal.className = '__prospect_modal';
+
+    var title = document.createElement('h3');
+    title.textContent = 'Add Lead to Pipeline';
+    modal.appendChild(title);
+
+    var sub = document.createElement('div');
+    sub.className = 'subtitle';
+    sub.textContent = postUrl.length > 55 ? postUrl.slice(0, 55) + '...' : postUrl;
+    modal.appendChild(sub);
+
+    function createField(label, value, id, isSelect, selectOptions) {
+      var wrapper = document.createElement('div');
+      var lbl = document.createElement('label');
+      lbl.textContent = label;
+      wrapper.appendChild(lbl);
+
+      if (isSelect) {
+        var sel = document.createElement('select');
+        sel.id = id;
+        selectOptions.forEach(function(opt) {
+          var o = document.createElement('option');
+          o.value = opt[0];
+          o.textContent = '#' + opt[0] + ' — ' + opt[1];
+          if (opt[0] === value) o.selected = true;
+          sel.appendChild(o);
+        });
+        wrapper.appendChild(sel);
+      } else {
+        var inp = document.createElement('input');
+        inp.id = id;
+        inp.value = value;
+        wrapper.appendChild(inp);
+      }
+      return wrapper;
+    }
+
+    modal.appendChild(createField('Poster Name / Title', posterTitle, '__mod_poster'));
+    modal.appendChild(createField('ICP Score (0-100)', score, '__mod_score'));
+    modal.appendChild(createField('Search String', matchedStringId, '__mod_string', true, stringsList));
+    modal.appendChild(createField('Post URL', postUrl, '__mod_url'));
+
+    var btnWrap = document.createElement('div');
+    btnWrap.className = '__prospect_modal_btns';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = '__prospect_cancel_btn';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', function() {
+      document.body.removeChild(overlay);
+    });
+
+    var saveBtn = document.createElement('button');
+    saveBtn.className = '__prospect_save_btn';
+    saveBtn.textContent = 'Save to Pipeline';
+    saveBtn.addEventListener('click', function() {
+      var finalUrl = document.getElementById('__mod_url').value.trim();
+      var finalPoster = document.getElementById('__mod_poster').value.trim();
+      var finalScore = document.getElementById('__mod_score').value.trim();
+      var finalString = document.getElementById('__mod_string').value;
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      iframe.contentWindow.postMessage({
+        action: 'save_lead',
+        lead: {
+          stringId: Number(finalString),
+          url: finalUrl,
+          posterTitle: finalPoster || 'Unknown',
+          score: finalScore || '0',
+          status: 'hit',
+          date: new Date().toISOString().slice(0, 10)
+        }
+      }, 'https://GITHUB_USERNAME.github.io');
+
+      function responseHandler(event) {
+        if (event.origin === 'https://GITHUB_USERNAME.github.io' && event.data && event.data.action === 'save_confirm') {
+          window.removeEventListener('message', responseHandler);
+          if (event.data.success) {
+            modal.innerHTML = \`
+              <div style="text-align:center;padding:20px 0;">
+                <div style="font-size:48px;color:#1a7f37;margin-bottom:12px;">✓</div>
+                <h4 style="margin:0 0 6px 0;font-size:16px;font-weight:700;color:#1a7f37;">Saved Successfully</h4>
+                <p style="margin:0;font-size:12px;color:#57606a;">Stored in your GitHub Pages domain localStorage.</p>
+              </div>
+            \`;
+            setTimeout(function() {
+              if (document.body.contains(overlay)) {
+                document.body.removeChild(overlay);
+              }
+            }, 1500);
+          } else {
+            alert('Failed to save: ' + (event.data.error || 'unknown error'));
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save to Pipeline';
+          }
+        }
+      }
+      window.addEventListener('message', responseHandler);
+    });
+
+    btnWrap.appendChild(saveBtn);
+    btnWrap.appendChild(cancelBtn);
+    modal.appendChild(btnWrap);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
+  function scanPage() {
+    var selectors = [
+      '.feed-shared-update-v2',
+      '[data-urn^="urn:li:activity:"]',
+      '.update-components-actor',
+      '.search-relevance-card__relevance-choice-card',
+      '.search-entity-outlet'
+    ];
+    selectors.forEach(function(sel) {
+      var els = document.querySelectorAll(sel);
+      for (var i = 0; i < els.length; i++) {
+        processPost(els[i]);
+      }
+    });
+  }
+
+  scanPage();
+  var observer = new MutationObserver(scanPage);
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  var notification = document.createElement('div');
+  notification.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1a7f37;color:white;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;transition:opacity 0.5s;font-family:sans-serif;';
+  notification.textContent = '⚡ LinkedIn Hover Chips Active!';
+  document.body.appendChild(notification);
+  setTimeout(function() {
+    notification.style.opacity = '0';
+    setTimeout(function() {
+      if (document.body.contains(notification)) document.body.removeChild(notification);
+    }, 500);
+  }, 3000);
 })();`;
 
-    // Encode as bookmarklet href
-    const encoded = 'javascript:' + encodeURIComponent(bookmarkletCode);
-    document.getElementById('bookmarklet-link').href = encoded;
+    function updateBookmarklet() {
+      const usernameInput = document.getElementById("username-input");
+      const username = usernameInput.value.trim().toLowerCase() || "jayesh";
+      
+      const compiledCode = bookmarkletTemplate.replace(/GITHUB_USERNAME/g, username);
+      const encoded = "javascript:" + encodeURIComponent(compiledCode);
+      
+      const link = document.getElementById("bookmarklet-link");
+      link.href = encoded;
+    }
+
+    document.getElementById("username-input").addEventListener("input", updateBookmarklet);
+    
+    // Initial compile
+    updateBookmarklet();
   </script>
 </body>
 </html>
