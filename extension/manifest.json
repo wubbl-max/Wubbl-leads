@@ -16,7 +16,7 @@
     "default_title": "Open Wubbl Pipeline"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self' 'inline-speculation-rules'; object-src 'self'"
   },
   "web_accessible_resources": [
     {
