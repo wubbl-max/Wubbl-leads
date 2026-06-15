@@ -40,8 +40,8 @@
     .url-link { color: #0077b5; text-decoration: none; font-size: 12px; }
     .url-link:hover { text-decoration: underline; }
     .empty { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+    .loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
 
-    /* Weekly review view */
     .review-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; border: 1px solid #e0e0e0; font-size: 13px; }
     .review-table th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
     .review-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
@@ -88,19 +88,54 @@
     <button class="export-btn" id="export-btn">Export CSV</button>
   </div>
 
-  <div id="pipeline-view"></div>
+  <div id="pipeline-view"><p class="loading">Loading…</p></div>
   <div id="review-view" style="display:none"></div>
 
   <script>
-    const STORAGE_KEY = "linkedin_pipeline_v1";
+    const ORIGIN = "https://wubbl-max.github.io";
+    const RECEIVER = ORIGIN + "/Wubbl-leads/receiver.html";
 
-    function loadLeads() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-      catch { return []; }
+    // Hidden iframe bridge — same receiver the extension uses
+    const fr = document.createElement("iframe");
+    fr.src = RECEIVER;
+    fr.style.cssText = "position:absolute;width:0;height:0;border:0;visibility:hidden";
+    document.body.appendChild(fr);
+
+    let leads = [];
+    let bridgeReady = false;
+    const pendingCallbacks = {};
+    let cbId = 0;
+
+    window.addEventListener("message", function(event) {
+      if (event.origin !== ORIGIN) return;
+      const d = event.data;
+      if (!d) return;
+
+      if (d.action === "leads_data") {
+        leads = d.leads || [];
+        renderPipeline();
+        renderReview();
+      } else if (d.action === "add_confirm" || d.action === "save_confirm") {
+        fetchLeads();
+      } else if (d.action === "update_confirm") {
+        fetchLeads();
+      } else if (d.action === "delete_confirm") {
+        fetchLeads();
+      }
+    });
+
+    fr.addEventListener("load", function() {
+      bridgeReady = true;
+      fetchLeads();
+    });
+
+    function send(msg) {
+      if (!bridgeReady) return;
+      fr.contentWindow.postMessage(msg, ORIGIN);
     }
 
-    function saveLeads(leads) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+    function fetchLeads() {
+      send({ action: "get_leads" });
     }
 
     function getStringLabel(id) {
@@ -110,7 +145,7 @@
 
     // Populate string dropdown
     const stringSelect = document.getElementById("new-string-id");
-    CONFIG.strings.forEach(s => {
+    CONFIG.strings.forEach(function(s) {
       const opt = document.createElement("option");
       opt.value = s.id;
       opt.textContent = `#${s.id} — ${s.label}`;
@@ -118,103 +153,71 @@
     });
 
     function renderPipeline() {
-      const leads = loadLeads();
       const view = document.getElementById("pipeline-view");
-
       if (leads.length === 0) {
         view.innerHTML = '<p class="empty">No leads yet. Add your first hit above.</p>';
         return;
       }
-
       view.innerHTML = `
         <table>
           <thead>
             <tr>
-              <th>String</th>
-              <th>Post</th>
-              <th>Poster Title</th>
-              <th>Score</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th></th>
+              <th>String</th><th>Post</th><th>Poster Title</th>
+              <th>Score</th><th>Status</th><th>Date</th><th></th>
             </tr>
           </thead>
           <tbody>
-            ${leads.map((lead, i) => `
+            ${leads.map(function(lead, i) { return `
               <tr>
                 <td>${getStringLabel(lead.stringId)}</td>
                 <td>${lead.url ? `<a class="url-link" href="${lead.url}" target="_blank" rel="noopener">View ↗</a>` : "—"}</td>
                 <td>${lead.posterTitle || "—"}</td>
                 <td><span class="score-badge ${Number(lead.score) >= CONFIG.qualifiedThreshold ? "qualified" : "skip"}">${lead.score}</span></td>
                 <td>
-                  <select class="status-select" data-index="${i}" onchange="updateStatus(${i}, this.value)">
-                    ${CONFIG.statuses.map(s => `<option value="${s}" ${lead.status === s ? "selected" : ""}>${s}</option>`).join("")}
+                  <select class="status-select" onchange="updateStatus(${i}, this.value)">
+                    ${CONFIG.statuses.map(function(s) { return `<option value="${s}" ${lead.status === s ? "selected" : ""}>${s}</option>`; }).join("")}
                   </select>
                 </td>
                 <td>${lead.date}</td>
                 <td><button class="del-btn" onclick="deleteLead(${i})">×</button></td>
               </tr>
-            `).join("")}
+            `; }).join("")}
           </tbody>
         </table>
       `;
     }
 
     function renderReview() {
-      const leads = loadLeads();
       const view = document.getElementById("review-view");
-
-      // Group by string
       const byString = {};
-      CONFIG.strings.forEach(s => { byString[s.id] = { label: s.label, tier: s.tier, hits: 0, qualified: 0 }; });
-      leads.forEach(lead => {
+      CONFIG.strings.forEach(function(s) { byString[s.id] = { label: s.label, tier: s.tier, hits: 0, qualified: 0 }; });
+      leads.forEach(function(lead) {
         if (byString[lead.stringId]) {
           byString[lead.stringId].hits++;
           if (Number(lead.score) >= CONFIG.qualifiedThreshold) byString[lead.stringId].qualified++;
         }
       });
-
-      const rows = Object.entries(byString)
-        .filter(([, d]) => d.hits > 0)
-        .sort((a, b) => b[1].hits - a[1].hits);
-
+      const rows = Object.entries(byString).filter(function(e) { return e[1].hits > 0; })
+        .sort(function(a, b) { return b[1].hits - a[1].hits; });
       if (rows.length === 0) {
         view.innerHTML = '<p class="empty">No data yet. Log some leads first.</p>';
         return;
       }
-
       view.innerHTML = `
         <table class="review-table">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>String</th>
-              <th>Tier</th>
-              <th>Hits</th>
-              <th>Qualified</th>
-              <th>ICP %</th>
-              <th>Day 5 verdict</th>
-            </tr>
+            <tr><th>#</th><th>String</th><th>Tier</th><th>Hits</th><th>Qualified</th><th>ICP %</th><th>Day 5 verdict</th></tr>
           </thead>
           <tbody>
-            ${rows.map(([id, d]) => {
+            ${rows.map(function(e) {
+              const id = e[0], d = e[1];
               const pct = d.hits > 0 ? Math.round((d.qualified / d.hits) * 100) : 0;
               const verdict = d.hits >= 3 && pct < 60
                 ? '<span class="kill-flag">Kill / replace</span>'
                 : d.hits >= 3 && pct >= 60
                 ? '<span class="ok-flag">Keep</span>'
                 : '<span style="color:#aaa;font-size:11px">Need more data</span>';
-              return `
-                <tr>
-                  <td>${id}</td>
-                  <td>${d.label}</td>
-                  <td>T${d.tier}</td>
-                  <td>${d.hits}</td>
-                  <td>${d.qualified}</td>
-                  <td>${pct}%</td>
-                  <td>${verdict}</td>
-                </tr>
-              `;
+              return `<tr><td>${id}</td><td>${d.label}</td><td>T${d.tier}</td><td>${d.hits}</td><td>${d.qualified}</td><td>${pct}%</td><td>${verdict}</td></tr>`;
             }).join("")}
           </tbody>
         </table>
@@ -222,70 +225,49 @@
     }
 
     function updateStatus(index, value) {
-      const leads = loadLeads();
-      leads[index].status = value;
-      saveLeads(leads);
+      send({ action: "update_lead", index: index, updates: { status: value } });
     }
 
     function deleteLead(index) {
-      const leads = loadLeads();
-      leads.splice(index, 1);
-      saveLeads(leads);
-      renderPipeline();
-      renderReview();
+      send({ action: "delete_lead", index: index });
     }
 
-    document.getElementById("add-btn").addEventListener("click", () => {
+    document.getElementById("add-btn").addEventListener("click", function() {
       const stringId = Number(document.getElementById("new-string-id").value);
       const url = document.getElementById("new-url").value.trim();
       const posterTitle = document.getElementById("new-title").value.trim();
       const score = document.getElementById("new-score").value.trim();
-
       if (!posterTitle && !url) return;
-
-      const leads = loadLeads();
-      leads.unshift({
-        stringId,
-        url,
-        posterTitle,
-        score: score || "0",
-        status: "hit",
-        date: new Date().toISOString().slice(0, 10),
+      send({
+        action: "add_lead",
+        lead: { stringId, url, posterTitle, score: score || "0", status: "hit", date: new Date().toISOString().slice(0, 10) }
       });
-      saveLeads(leads);
-
       document.getElementById("new-url").value = "";
       document.getElementById("new-title").value = "";
       document.getElementById("new-score").value = "";
-
-      renderPipeline();
-      renderReview();
     });
 
-    document.getElementById("btn-pipeline").addEventListener("click", () => {
+    document.getElementById("btn-pipeline").addEventListener("click", function() {
       document.getElementById("pipeline-view").style.display = "";
       document.getElementById("review-view").style.display = "none";
       document.getElementById("btn-pipeline").classList.add("active");
       document.getElementById("btn-review").classList.remove("active");
     });
 
-    document.getElementById("btn-review").addEventListener("click", () => {
+    document.getElementById("btn-review").addEventListener("click", function() {
       document.getElementById("pipeline-view").style.display = "none";
       document.getElementById("review-view").style.display = "";
       document.getElementById("btn-pipeline").classList.remove("active");
       document.getElementById("btn-review").classList.add("active");
-      renderReview();
     });
 
-    document.getElementById("export-btn").addEventListener("click", () => {
-      const leads = loadLeads();
+    document.getElementById("export-btn").addEventListener("click", function() {
       if (leads.length === 0) { alert("No leads to export."); return; }
       const header = "String #,String Label,Post URL,Poster Title,ICP Score,Status,Date";
-      const rows = leads.map(l =>
-        [l.stringId, getStringLabel(l.stringId), l.url, l.posterTitle, l.score, l.status, l.date]
-          .map(v => `"${(v || "").replace(/"/g, '""')}"`)
-          .join(",")
-      );
+      const rows = leads.map(function(l) {
+        return [l.stringId, getStringLabel(l.stringId), l.url, l.posterTitle, l.score, l.status, l.date]
+          .map(function(v) { return `"${(v || "").replace(/"/g, '""')}"` }).join(",");
+      });
       const csv = [header, ...rows].join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
@@ -293,8 +275,6 @@
       a.download = "linkedin-pipeline-" + new Date().toISOString().slice(0, 10) + ".csv";
       a.click();
     });
-
-    renderPipeline();
   </script>
 </body>
 </html>

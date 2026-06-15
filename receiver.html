@@ -8,37 +8,65 @@
   <script>
     const STORAGE_KEY = "linkedin_pipeline_v1";
 
+    function isAllowedOrigin(origin) {
+      if (origin === "null" || origin === null) return true; // file:// local pages
+      return origin === "https://www.linkedin.com" ||
+             origin === "https://linkedin.com" ||
+             origin.endsWith(".linkedin.com");
+    }
+
     window.addEventListener("message", function(event) {
-      // Security: Validate origin is LinkedIn
-      const allowedOrigins = [
-        "https://www.linkedin.com",
-        "https://linkedin.com"
-      ];
-      
-      const isAllowed = allowedOrigins.some(origin => event.origin === origin || event.origin.endsWith(".linkedin.com"));
-      if (!isAllowed) {
-        console.warn("Rejected postMessage from unauthorized origin:", event.origin);
+      if (!isAllowedOrigin(event.origin)) {
+        console.warn("Rejected postMessage from:", event.origin);
         return;
       }
 
       const data = event.data;
-      if (data && data.action === "save_lead" && data.lead) {
+      if (!data || !data.action) return;
+
+      const replyOrigin = event.origin === "null" ? "*" : event.origin;
+
+      if (data.action === "save_lead" && data.lead) {
         let existing = [];
-        try {
-          existing = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        } catch (e) {
-          console.error("Error reading localStorage:", e);
-        }
-
+        try { existing = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
         existing.unshift(data.lead);
-
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-          // Respond back to confirm saving
-          event.source.postMessage({ action: "save_confirm", success: true }, event.origin);
-        } catch (e) {
-          console.error("Error writing to localStorage:", e);
-          event.source.postMessage({ action: "save_confirm", success: false, error: e.message }, event.origin);
+          event.source.postMessage({ action: "save_confirm", success: true }, replyOrigin);
+        } catch(e) {
+          event.source.postMessage({ action: "save_confirm", success: false, error: e.message }, replyOrigin);
+        }
+
+      } else if (data.action === "get_leads") {
+        let leads = [];
+        try { leads = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
+        event.source.postMessage({ action: "leads_data", leads: leads }, replyOrigin);
+
+      } else if (data.action === "update_lead" && data.index !== undefined) {
+        let leads = [];
+        try { leads = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
+        if (leads[data.index]) {
+          Object.assign(leads[data.index], data.updates);
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(leads)); } catch(e) {}
+        }
+        event.source.postMessage({ action: "update_confirm", success: true }, replyOrigin);
+
+      } else if (data.action === "delete_lead" && data.index !== undefined) {
+        let leads = [];
+        try { leads = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
+        leads.splice(data.index, 1);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(leads)); } catch(e) {}
+        event.source.postMessage({ action: "delete_confirm", success: true }, replyOrigin);
+
+      } else if (data.action === "add_lead" && data.lead) {
+        let existing = [];
+        try { existing = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
+        existing.unshift(data.lead);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+          event.source.postMessage({ action: "add_confirm", success: true }, replyOrigin);
+        } catch(e) {
+          event.source.postMessage({ action: "add_confirm", success: false, error: e.message }, replyOrigin);
         }
       }
     });

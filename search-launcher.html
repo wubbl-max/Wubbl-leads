@@ -296,20 +296,20 @@
         <span id="tc-all" class="tab-count">23</span>
       </button>
       <button class="tier-tab t1" data-tier="1" onclick="filterTier('1')">
-        <span class="tab-dot"></span>Tier 1 — Hottest
+        <span class="tab-dot"></span>Tier 1 — Direct Asks
         <span id="tc-1" class="tab-count">6</span>
       </button>
       <button class="tier-tab t2" data-tier="2" onclick="filterTier('2')">
-        <span class="tab-dot"></span>Tier 2 — Strong Signal
-        <span id="tc-2" class="tab-count">10</span>
+        <span class="tab-dot"></span>Tier 2 — Pain + Intent
+        <span id="tc-2" class="tab-count">7</span>
       </button>
       <button class="tier-tab t3" data-tier="3" onclick="filterTier('3')">
         <span class="tab-dot"></span>Tier 3 — Geo-Targeted
-        <span id="tc-3" class="tab-count">4</span>
+        <span id="tc-3" class="tab-count">8</span>
       </button>
       <button class="tier-tab t4" data-tier="4" onclick="filterTier('4')">
         <span class="tab-dot"></span>Tier 4 — Weekly
-        <span id="tc-4" class="tab-count">3</span>
+        <span id="tc-4" class="tab-count">2</span>
       </button>
     </div>
 
@@ -319,7 +319,19 @@
         width:100%; padding: 12px; font-size: 13px; font-weight: 700;
         background: var(--blue); color: white; border: none; border-radius: var(--radius);
         cursor: pointer; letter-spacing: 0.02em;">
-        ▶ Run All Searches
+        ▶ Run All Tier 1
+      </button>
+      <button id="run-selected-btn" onclick="triggerSelectedSearches()" style="
+        width:100%; margin-top:6px; padding: 10px; font-size: 13px; font-weight: 700;
+        background: var(--green); color: white; border: none; border-radius: var(--radius);
+        cursor: pointer;">
+        ✓ Run Selected
+      </button>
+      <button onclick="toggleSelectAll()" id="sel-all-btn" style="
+        width:100%; margin-top:6px; padding: 7px; font-size: 11px; font-weight: 600;
+        background: white; color: var(--gray-600); border: 1px solid var(--gray-200);
+        border-radius: var(--radius); cursor: pointer;">
+        Select All
       </button>
       <button id="hits-only-btn" onclick="toggleHitsOnly()" style="
         width:100%; margin-top:6px; padding: 8px; font-size: 12px; font-weight: 600;
@@ -327,6 +339,9 @@
         border-radius: var(--radius); cursor: pointer;">
         Show only with hits
       </button>
+      <div style="margin-top:10px; padding:8px 10px; background:var(--yellow-light); border:1px solid #e6c300; border-radius:6px; font-size:10px; color:var(--yellow-900,#5a4000); line-height:1.5;">
+        After LinkedIn opens, click <strong>Date Posted → Past 24 hours</strong> to filter fresh posts.
+      </div>
     </div>
 
     <div class="sidebar-bottom">
@@ -621,6 +636,35 @@
     resetTimer();
   }
 
+  // ── Run selected (checked) strings ───────────────────────────────────────
+  function triggerSelectedSearches() {
+    const checks = Array.from(document.querySelectorAll('.str-chk:checked'));
+    if (checks.length === 0) { alert('Tick at least one string first.'); return; }
+    // Open tabs synchronously — setTimeout causes popup blocking
+    checks.forEach(function(c) {
+      var s = CONFIG.strings.find(function(x) { return x.id === Number(c.value); });
+      if (!s) return;
+      window.open(encodeLinkedInURL(s.query), '_blank');
+      markRunSilent(s.id);
+    });
+    var btn = document.getElementById('run-selected-btn');
+    btn.textContent = '✓ ' + checks.length + ' opened';
+    btn.style.background = 'var(--blue)';
+    setTimeout(function() {
+      btn.textContent = '✓ Run Selected';
+      btn.style.background = 'var(--green)';
+      renderMain(); updateStats();
+    }, 2000);
+    resetTimer();
+  }
+
+  function toggleSelectAll() {
+    var checks = document.querySelectorAll('.str-chk');
+    var anyUnchecked = Array.from(checks).some(function(c) { return !c.checked; });
+    checks.forEach(function(c) { c.checked = anyUnchecked; });
+    document.getElementById('sel-all-btn').textContent = anyUnchecked ? 'Deselect All' : 'Select All';
+  }
+
   // markRun without UI side-effects (for batch open)
   function markRunSilent(id) {
     const state = loadState();
@@ -751,6 +795,9 @@
 
         card.innerHTML = `
           <div class="card-summary" onclick="toggleCard(${s.id})">
+            <input type="checkbox" id="chk-${s.id}" class="str-chk" value="${s.id}"
+              onclick="event.stopPropagation()"
+              style="width:14px;height:14px;margin-right:4px;cursor:pointer;flex-shrink:0;accent-color:var(--blue)">
             <span class="expand-icon">▶</span>
             <span class="status-pip ${pipClass}"></span>
             <span class="card-num">${s.id}</span>

@@ -1,152 +1,152 @@
 const CONFIG = {
   strings: [
-    // Tier 1 — Hottest Intent
-    // Job post exclusions: -"OpenToWork" -"open to work" -"seeking a role" -"new role" -"view job"
-    //                      -hiring -"job opening" -"apply now" -"we are hiring" -"job description"
-    // Geo exclusions: -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune
+
+    // ── Tier 1 — Direct buyer asks ────────────────────────────────────────────
+    // LinkedIn Posts search uses `-` for exclusions, NOT uppercase NOT.
+    // No AND chains — pure OR lists only (AND chains return 0 results in Posts search).
     {
       id: 1,
       tier: 1,
       label: "Looking for product designer",
-      query: '("looking for a product designer" OR "need a product designer" OR "recommend a product designer") -"OpenToWork" -"open to work" -"seeking a role" -"new role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      query: '"looking for a product designer" OR "need a product designer" OR "recommend a product designer" OR "hire a product designer" -"open to work" -"actively looking" -"is available" -India -Pakistan -Bangladesh -Africa -Philippines -Indonesia',
     },
     {
       id: 2,
       tier: 1,
-      label: "Looking for UX/UI designer",
-      query: '("looking for a UX designer" OR "need a UX designer" OR "looking for a UI designer" OR "recommend a UX designer") -"OpenToWork" -"open to work" -"seeking a role" -"new role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -"job description" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for UX / UI designer",
+      query: '"looking for a UX designer" OR "need a UX designer" OR "looking for a UI designer" OR "recommend a UX designer" -"open to work" -"actively looking" -"is available" -India -Pakistan -Bangladesh -Africa -Philippines -Indonesia',
     },
     {
       id: 3,
       tier: 1,
       label: "Looking for design agency",
-      query: '("looking for a design agency" OR "recommend a design agency" OR "anyone know a good design agency" OR "looking for a branding agency") -"OpenToWork" -"open to work" -"view job" -hiring -"job opening" -"apply now" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      query: '"looking for a design agency" OR "recommend a design agency" OR "need a design agency" OR "looking for a branding agency" OR "need a branding agency" -"open to work" -India -Pakistan -Bangladesh -Africa -Philippines -Indonesia',
     },
     {
       id: 4,
       tier: 1,
-      label: "Looking for branding help",
-      query: '("need help with branding" OR "looking for branding" OR "need a brand identity" OR "looking for logo design") -"OpenToWork" -"open to work" -"seeking a role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for branding / logo help",
+      query: '"need help with branding" OR "looking for branding help" OR "need a brand identity" OR "need a logo" OR "looking for logo design" -"open to work" -"actively looking" -"is available" -India -Pakistan -Bangladesh -Africa -Philippines -Indonesia',
     },
     {
       id: 5,
       tier: 1,
-      label: "Looking for website design/dev",
-      query: '("looking for website design" OR "need a website redesign" OR "looking for a Webflow designer" OR "need a web designer") -"OpenToWork" -"open to work" -"seeking a role" -"view job" -hiring -"job opening" -"apply now" -"we are hiring" -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for website / Webflow designer",
+      query: '"need a website redesign" OR "looking for a Webflow designer" OR "need a web designer" OR "looking for website design" OR "need someone to redesign our website" -"open to work" -"actively looking" -"is available" -India -Pakistan -Bangladesh -Africa -Philippines -Indonesia',
     },
     {
       id: 6,
       tier: 1,
-      label: "Fresh funding (ex-India)",
-      query: '("raised our seed" OR "closed our Series A" OR "announcing our seed round") AND ("SaaS" OR "fintech" OR "B2B") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "Looking for freelance designer",
+      query: '"looking for a freelance designer" OR "recommend a freelance designer" OR "need a freelance UX designer" OR "need a freelance product designer" -"open to work" -"actively looking" -"is available" -India -Pakistan -Bangladesh -Africa -Philippines -Indonesia',
     },
 
-    // Tier 2 — Strong Signal
+    // ── Tier 2 — Pain + intent signals ───────────────────────────────────────
     {
       id: 7,
       tier: 2,
-      label: "Activation / churn pain",
-      query: '("activation" OR "onboarding drop-off" OR "churn") AND ("struggling" OR "fixing" OR "rebuilding")',
+      label: "Product redesign intent",
+      query: '"redesigning our product" OR "revamping our UX" OR "product redesign" OR "rebuilding our UI" OR "overhauling our design" -"open to work" -portfolio -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 8,
       tier: 2,
-      label: "Product redesign intent",
-      query: '("redesigning our product" OR "revamping our UX" OR "product redesign") AND ("startup" OR "SaaS")',
+      label: "Website not converting",
+      query: '"website not converting" OR "landing page not converting" OR "high bounce rate" OR "visitors not converting" -"open to work" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 9,
       tier: 2,
-      label: "Asking for design agency / partner recs (ex-India)",
-      query: '("recommend a design agency" OR "anyone know a good designer" OR "looking for a design partner" OR "freelance designer recommendations") -India -Mumbai -Delhi -Bangalore -Hyderabad -Chennai -Pune',
+      label: "No designer pain",
+      query: '"no designer" OR "without a designer" OR "building without a designer" OR "doing design myself" OR "we have no designer" -"open to work" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 10,
       tier: 2,
-      label: "Design system need",
-      query: '("design system" OR "design tokens") AND ("building" OR "need help" OR "hiring")',
+      label: "Pre-launch needs design",
+      query: '"need a designer" OR "launching soon" OR "going live soon" OR "pre-launch" -"open to work" -"actively looking" -"is available" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 11,
       tier: 2,
-      label: "Pre-launch / MVP design help",
-      query: '("launching soon" OR "pre-launch" OR "MVP") AND ("design help" OR "designer" OR "UX")',
+      label: "Fresh funding",
+      query: '"just raised" OR "raised our seed" OR "closed our Series A" OR "announcing our seed round" OR "closed our funding" -India -Pakistan -Bangladesh -Africa -Philippines -Indonesia',
     },
     {
       id: 12,
       tier: 2,
-      label: "Tech founders with no design",
-      query: '("technical founders" OR "engineering-led") AND ("design" OR "UX") AND ("need" OR "looking")',
+      label: "Unhappy with agency",
+      query: '"design agency" OR "disappointed with" OR "looking for a new agency" OR "switching agencies" OR "terrible experience with" -"open to work" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 13,
       tier: 2,
-      label: "Website not converting",
-      query: '("website" OR "landing page") AND ("converting" OR "bounce rate" OR "not converting") AND ("help" OR "anyone" OR "advice")',
+      label: "Churn / UX pain",
+      query: '"onboarding drop-off" OR "users churning" OR "activation rate" OR "UX is hurting" OR "design is hurting" -"open to work" -India -Pakistan -Bangladesh -Africa',
     },
+
+    // ── Tier 3 — Country-specific ─────────────────────────────────────────────
     {
       id: 14,
-      tier: 2,
-      label: "Brand identity / logo need",
-      query: '("brand identity" OR "logo" OR "visual identity") AND ("need" OR "looking for" OR "recommendations") AND ("startup" OR "founder")',
+      tier: 3,
+      label: "Singapore",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" Singapore -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 15,
-      tier: 2,
-      label: "No designer pain language",
-      query: '("no designer" OR "without a designer" OR "design is a mess") AND ("startup" OR "SaaS")',
+      tier: 3,
+      label: "UAE / Dubai",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" Dubai OR UAE -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 16,
-      tier: 2,
-      label: "Webflow / Framer help needed",
-      query: '("Webflow" OR "Framer" OR "website builder") AND ("need help" OR "looking for" OR "hire") AND ("startup" OR "founder")',
+      tier: 3,
+      label: "UK / London",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" London OR "United Kingdom" -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
-
-    // Tier 3 — Geo-Targeted
     {
       id: 17,
       tier: 3,
-      label: "Funding in London/SG/CH/DE",
-      query: '("raised" OR "funding") AND ("London" OR "Singapore" OR "Switzerland" OR "Germany") AND ("SaaS" OR "fintech")',
+      label: "Ireland / Dublin",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" Dublin OR Ireland -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 18,
       tier: 3,
-      label: "Seed/Series A in key cities",
-      query: '("raised" OR "seed" OR "Series A") AND ("Zurich" OR "Berlin" OR "Frankfurt" OR "Singapore") AND ("SaaS" OR "fintech")',
+      label: "Australia",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" Sydney OR Melbourne OR Australia -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 19,
       tier: 3,
-      label: "Designer hire in target geos",
-      query: '("hiring designer" OR "design hire") AND ("London" OR "Singapore" OR "Switzerland" OR "Germany")',
+      label: "Switzerland",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" Zurich OR Geneva OR Switzerland -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 20,
       tier: 3,
-      label: "Brand/website redesign in target geos",
-      query: '("brand" OR "website") AND ("redesign" OR "refresh") AND ("London" OR "Singapore" OR "Zurich" OR "Berlin")',
+      label: "USA",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" "New York" OR "San Francisco" OR Austin OR "United States" -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
-
-    // Tier 4 — Broad Intent
     {
       id: 21,
-      tier: 4,
-      label: "Fractional design / design partner",
-      query: '("fractional design" OR "design partner" OR "design as a service") AND ("startup" OR "founder")',
+      tier: 3,
+      label: "Canada",
+      query: '"looking for a designer" OR "need a designer" OR "recommend a designer" OR "design agency" OR "branding agency" Toronto OR Vancouver OR Canada -"open to work" -"actively looking" -India -Pakistan -Bangladesh -Africa',
     },
+
+    // ── Tier 4 — Weekly broad ─────────────────────────────────────────────────
     {
       id: 22,
       tier: 4,
-      label: "Unhappy with agency",
-      query: '("website agency" OR "branding agency") AND ("recommendations" OR "avoid" OR "disappointed") AND ("startup")',
+      label: "Fractional / embedded design",
+      query: '"fractional design" OR "design partner" OR "design as a service" OR "embedded designer" OR "fractional designer" -"open to work" -"actively looking" -"is available" -India -Pakistan -Bangladesh -Africa',
     },
     {
       id: 23,
       tier: 4,
-      label: "PLG + design need",
-      query: '("product-led growth" OR "PLG") AND ("design" OR "UX" OR "onboarding") AND ("need" OR "help" OR "building")',
+      label: "Funding in target geos",
+      query: '"just raised" OR "seed round" OR "Series A" London OR Singapore OR Dubai OR Sydney OR Toronto OR Zurich OR Dublin -India -Pakistan -Bangladesh -Africa',
     },
   ],
 
@@ -178,7 +178,7 @@ const CONFIG = {
     },
     geoMatch: {
       weight: 10,
-      keywords: ["london", "singapore", "switzerland", "germany", "zurich", "berlin", "frankfurt", "dubai", "bangalore", "pune", "lagos", "nairobi", "cairo"],
+      keywords: ["london", "singapore", "switzerland", "zurich", "berlin", "dubai", "uae", "sydney", "toronto", "vancouver", "dublin", "ireland"],
       label: "Geo match",
     },
     painLanguage: {
@@ -191,10 +191,10 @@ const CONFIG = {
   qualifiedThreshold: 60,
 
   tiers: {
-    1: { label: "Tier 1 — Hottest Intent", action: "Comment within 2hrs" },
-    2: { label: "Tier 2 — Strong Signal", action: "Offer a teardown" },
+    1: { label: "Tier 1 — Direct Buyer Asks", action: "Comment within 2hrs" },
+    2: { label: "Tier 2 — Pain + Intent", action: "Offer a teardown" },
     3: { label: "Tier 3 — Geo-Targeted", action: "Comment within 2hrs" },
-    4: { label: "Tier 4 — Broad Intent", action: "Monitor weekly" },
+    4: { label: "Tier 4 — Weekly Broad", action: "Monitor weekly" },
   },
 
   statuses: ["hit", "scored", "commented", "DM", "call", "closed", "dead"],
