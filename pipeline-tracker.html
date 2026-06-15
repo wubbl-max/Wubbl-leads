@@ -20,7 +20,6 @@
     .add-btn { padding: 9px 18px; font-size: 13px; font-weight: 600; background: #0077b5; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; }
     .add-btn:hover { background: #005f8e; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .toolbar-left { display: flex; gap: 10px; align-items: center; }
     .view-toggle { display: flex; gap: 6px; }
     .view-btn { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; }
     .view-btn.active { background: #0077b5; color: white; border-color: #0077b5; }
@@ -40,8 +39,9 @@
     .url-link { color: #0077b5; text-decoration: none; font-size: 12px; }
     .url-link:hover { text-decoration: underline; }
     .empty { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
-    .loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
-
+    .no-bridge { text-align: center; padding: 40px; }
+    .no-bridge p { font-size: 14px; color: #666; margin-bottom: 8px; }
+    .no-bridge code { font-size: 12px; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
     .review-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; border: 1px solid #e0e0e0; font-size: 13px; }
     .review-table th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
     .review-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
@@ -79,115 +79,88 @@
   </div>
 
   <div class="toolbar">
-    <div class="toolbar-left">
-      <div class="view-toggle">
-        <button class="view-btn active" id="btn-pipeline">Pipeline</button>
-        <button class="view-btn" id="btn-review">Weekly Review</button>
-      </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-pipeline">Pipeline</button>
+      <button class="view-btn" id="btn-review">Weekly Review</button>
     </div>
     <button class="export-btn" id="export-btn">Export CSV</button>
   </div>
 
-  <div id="pipeline-view"><p class="loading">Loading…</p></div>
+  <div id="pipeline-view"><p class="empty">Connecting to extension…</p></div>
   <div id="review-view" style="display:none"></div>
 
   <script>
-    const ORIGIN = "https://wubbl-max.github.io";
-    const RECEIVER = ORIGIN + "/Wubbl-leads/receiver.html";
-
-    // Hidden iframe bridge — same receiver the extension uses
-    // Cache-bust so we always get the latest receiver
-    const fr = document.createElement("iframe");
-    fr.src = RECEIVER + "?v=" + Date.now();
-    fr.style.cssText = "position:absolute;width:0;height:0;border:0;visibility:hidden";
-    document.body.appendChild(fr);
-
     let leads = [];
     let bridgeReady = false;
-    const pendingCallbacks = {};
-    let cbId = 0;
+
+    // Send a message to bridge.js (content script)
+    function send(msg) {
+      window.postMessage(Object.assign({ __wubbl: true }, msg), "*");
+    }
+
+    function fetchLeads() { send({ action: "get_leads" }); }
 
     window.addEventListener("message", function(event) {
-      if (event.origin !== ORIGIN) return;
+      if (!event.data || !event.data.__wubbl) return;
       const d = event.data;
-      if (!d) return;
 
-      if (d.action === "leads_updated") {
+      if (d.action === "bridge_ready") {
+        bridgeReady = true;
         fetchLeads();
-      } else if (d.action === "leads_data") {
+      } else if (d.action === "leads_data" || d.action === "leads_updated") {
         leads = d.leads || [];
         renderPipeline();
         renderReview();
-      } else if (d.action === "add_confirm" || d.action === "save_confirm") {
-        fetchLeads();
-      } else if (d.action === "update_confirm") {
-        fetchLeads();
-      } else if (d.action === "delete_confirm") {
+      } else if (d.action === "save_confirm") {
         fetchLeads();
       }
     });
 
-    fr.addEventListener("load", function() {
-      bridgeReady = true;
-      fetchLeads();
-    });
-
-    function send(msg) {
-      if (!bridgeReady) return;
-      fr.contentWindow.postMessage(msg, ORIGIN);
-    }
-
-    function fetchLeads() {
-      send({ action: "get_leads" });
-    }
+    // If extension bridge doesn't respond within 2s, show setup instructions
+    setTimeout(function() {
+      if (!bridgeReady) {
+        document.getElementById("pipeline-view").innerHTML =
+          '<div class="no-bridge">' +
+          '<p><strong>Extension bridge not detected.</strong></p>' +
+          '<p>In Arc/Chrome: go to <code>chrome://extensions</code>, find <strong>Wubbl Pipeline</strong>, and turn on <strong>"Allow access to file URLs"</strong>. Then reload this page.</p>' +
+          '</div>';
+      }
+    }, 2000);
 
     function getStringLabel(id) {
-      const s = CONFIG.strings.find(s => s.id === Number(id));
-      return s ? `#${s.id} ${s.label}` : `#${id}`;
+      const s = CONFIG.strings.find(function(s) { return s.id === Number(id); });
+      return s ? "#" + s.id + " " + s.label : "#" + id;
     }
 
-    // Populate string dropdown
     const stringSelect = document.getElementById("new-string-id");
     CONFIG.strings.forEach(function(s) {
       const opt = document.createElement("option");
       opt.value = s.id;
-      opt.textContent = `#${s.id} — ${s.label}`;
+      opt.textContent = "#" + s.id + " — " + s.label;
       stringSelect.appendChild(opt);
     });
 
     function renderPipeline() {
       const view = document.getElementById("pipeline-view");
       if (leads.length === 0) {
-        view.innerHTML = '<p class="empty">No leads yet. Add your first hit above.</p>';
+        view.innerHTML = '<p class="empty">No leads yet — save one from LinkedIn using the + button on any post.</p>';
         return;
       }
-      view.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>String</th><th>Post</th><th>Poster Title</th>
-              <th>Score</th><th>Status</th><th>Date</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${leads.map(function(lead, i) { return `
-              <tr>
-                <td>${getStringLabel(lead.stringId)}</td>
-                <td>${lead.url ? `<a class="url-link" href="${lead.url}" target="_blank" rel="noopener">View ↗</a>` : "—"}</td>
-                <td>${lead.posterTitle || "—"}</td>
-                <td><span class="score-badge ${Number(lead.score) >= CONFIG.qualifiedThreshold ? "qualified" : "skip"}">${lead.score}</span></td>
-                <td>
-                  <select class="status-select" onchange="updateStatus(${i}, this.value)">
-                    ${CONFIG.statuses.map(function(s) { return `<option value="${s}" ${lead.status === s ? "selected" : ""}>${s}</option>`; }).join("")}
-                  </select>
-                </td>
-                <td>${lead.date}</td>
-                <td><button class="del-btn" onclick="deleteLead(${i})">×</button></td>
-              </tr>
-            `; }).join("")}
-          </tbody>
-        </table>
-      `;
+      view.innerHTML = '<table><thead><tr><th>String</th><th>Post</th><th>Poster Title</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>' +
+        leads.map(function(lead, i) {
+          return '<tr>' +
+            '<td>' + getStringLabel(lead.stringId) + '</td>' +
+            '<td>' + (lead.url ? '<a class="url-link" href="' + lead.url + '" target="_blank" rel="noopener">View ↗</a>' : '—') + '</td>' +
+            '<td>' + (lead.posterTitle || '—') + '</td>' +
+            '<td><span class="score-badge ' + (Number(lead.score) >= CONFIG.qualifiedThreshold ? 'qualified' : 'skip') + '">' + lead.score + '</span></td>' +
+            '<td><select class="status-select" onchange="updateLead(' + i + ',this.value)">' +
+              CONFIG.statuses.map(function(s) { return '<option value="' + s + '"' + (lead.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
+            '</select></td>' +
+            '<td>' + lead.date + '</td>' +
+            '<td><button class="del-btn" onclick="deleteLead(' + i + ')">×</button></td>' +
+            '</tr>';
+        }).join('') +
+        '</tbody></table>';
     }
 
     function renderReview() {
@@ -202,33 +175,21 @@
       });
       const rows = Object.entries(byString).filter(function(e) { return e[1].hits > 0; })
         .sort(function(a, b) { return b[1].hits - a[1].hits; });
-      if (rows.length === 0) {
-        view.innerHTML = '<p class="empty">No data yet. Log some leads first.</p>';
-        return;
-      }
-      view.innerHTML = `
-        <table class="review-table">
-          <thead>
-            <tr><th>#</th><th>String</th><th>Tier</th><th>Hits</th><th>Qualified</th><th>ICP %</th><th>Day 5 verdict</th></tr>
-          </thead>
-          <tbody>
-            ${rows.map(function(e) {
-              const id = e[0], d = e[1];
-              const pct = d.hits > 0 ? Math.round((d.qualified / d.hits) * 100) : 0;
-              const verdict = d.hits >= 3 && pct < 60
-                ? '<span class="kill-flag">Kill / replace</span>'
-                : d.hits >= 3 && pct >= 60
-                ? '<span class="ok-flag">Keep</span>'
-                : '<span style="color:#aaa;font-size:11px">Need more data</span>';
-              return `<tr><td>${id}</td><td>${d.label}</td><td>T${d.tier}</td><td>${d.hits}</td><td>${d.qualified}</td><td>${pct}%</td><td>${verdict}</td></tr>`;
-            }).join("")}
-          </tbody>
-        </table>
-      `;
+      if (rows.length === 0) { view.innerHTML = '<p class="empty">No data yet.</p>'; return; }
+      view.innerHTML = '<table class="review-table"><thead><tr><th>#</th><th>String</th><th>Tier</th><th>Hits</th><th>Qualified</th><th>ICP %</th><th>Day 5 verdict</th></tr></thead><tbody>' +
+        rows.map(function(e) {
+          const id = e[0], d = e[1];
+          const pct = d.hits > 0 ? Math.round((d.qualified / d.hits) * 100) : 0;
+          const verdict = d.hits >= 3 && pct < 60 ? '<span class="kill-flag">Kill / replace</span>'
+            : d.hits >= 3 && pct >= 60 ? '<span class="ok-flag">Keep</span>'
+            : '<span style="color:#aaa;font-size:11px">Need more data</span>';
+          return '<tr><td>' + id + '</td><td>' + d.label + '</td><td>T' + d.tier + '</td><td>' + d.hits + '</td><td>' + d.qualified + '</td><td>' + pct + '%</td><td>' + verdict + '</td></tr>';
+        }).join('') +
+        '</tbody></table>';
     }
 
-    function updateStatus(index, value) {
-      send({ action: "update_lead", index: index, updates: { status: value } });
+    function updateLead(index, status) {
+      send({ action: "update_lead", index: index, updates: { status: status } });
     }
 
     function deleteLead(index) {
@@ -241,10 +202,7 @@
       const posterTitle = document.getElementById("new-title").value.trim();
       const score = document.getElementById("new-score").value.trim();
       if (!posterTitle && !url) return;
-      send({
-        action: "add_lead",
-        lead: { stringId, url, posterTitle, score: score || "0", status: "hit", date: new Date().toISOString().slice(0, 10) }
-      });
+      send({ action: "save_lead", lead: { stringId, url, posterTitle, score: score || "0", status: "hit", date: new Date().toISOString().slice(0, 10) } });
       document.getElementById("new-url").value = "";
       document.getElementById("new-title").value = "";
       document.getElementById("new-score").value = "";
@@ -269,13 +227,13 @@
       const header = "String #,String Label,Post URL,Poster Title,ICP Score,Status,Date";
       const rows = leads.map(function(l) {
         return [l.stringId, getStringLabel(l.stringId), l.url, l.posterTitle, l.score, l.status, l.date]
-          .map(function(v) { return `"${(v || "").replace(/"/g, '""')}"` }).join(",");
+          .map(function(v) { return '"' + (v || "").replace(/"/g, '""') + '"'; }).join(",");
       });
       const csv = [header, ...rows].join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "linkedin-pipeline-" + new Date().toISOString().slice(0, 10) + ".csv";
+      a.download = "wubbl-pipeline-" + new Date().toISOString().slice(0, 10) + ".csv";
       a.click();
     });
   </script>

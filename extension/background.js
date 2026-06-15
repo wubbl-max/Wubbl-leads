@@ -5,8 +5,13 @@ chrome.action.onClicked.addListener(function() {
   chrome.tabs.create({ url: chrome.runtime.getURL("pipeline-tracker.html") });
 });
 
-// Handle messages from content script
+// Handle messages from content script and bridge.js
 chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
+  if (msg.action === "open_pipeline") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("pipeline-tracker.html") });
+    return;
+  }
+
   if (msg.action === "save_lead" && msg.lead) {
     chrome.storage.local.get([STORAGE_KEY], function(result) {
       const leads = result[STORAGE_KEY] || [];
