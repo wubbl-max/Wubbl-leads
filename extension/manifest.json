@@ -15,6 +15,9 @@
   "action": {
     "default_title": "Open Wubbl Pipeline"
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "web_accessible_resources": [
     {
       "resources": ["pipeline-tracker.html", "pipeline-tracker.js", "config.js"],

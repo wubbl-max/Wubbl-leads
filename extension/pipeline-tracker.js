@@ -46,32 +46,89 @@ function getStringLabel(id) {
   return s ? "#" + s.id + " " + s.label : "#" + id;
 }
 
+function el(tag, attrs, text) {
+  const e = document.createElement(tag);
+  if (attrs) Object.entries(attrs).forEach(function(kv) { e.setAttribute(kv[0], kv[1]); });
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
 function renderPipeline() {
   const view = document.getElementById("pipeline-view");
+  while (view.firstChild) view.removeChild(view.firstChild);
+
   if (leads.length === 0) {
-    view.innerHTML = '<p class="empty">No leads yet — save one from LinkedIn using the + button on any post.</p>';
+    const p = el("p", { class: "empty" }, "No leads yet — save one from LinkedIn using the + button on any post.");
+    view.appendChild(p);
     return;
   }
-  let rows = "";
-  leads.forEach(function(lead, i) {
-    const statusOpts = CONFIG.statuses.map(function(s) {
-      return '<option value="' + s + '"' + (lead.status === s ? ' selected' : '') + '>' + s + '</option>';
-    }).join('');
-    rows += '<tr>' +
-      '<td>' + getStringLabel(lead.stringId) + '</td>' +
-      '<td>' + (lead.url ? '<a class="url-link" href="' + lead.url + '" target="_blank" rel="noopener">View ↗</a>' : '—') + '</td>' +
-      '<td>' + (lead.posterTitle || '—') + '</td>' +
-      '<td><span class="score-badge ' + (Number(lead.score) >= CONFIG.qualifiedThreshold ? 'qualified' : 'skip') + '">' + lead.score + '</span></td>' +
-      '<td><select class="status-select" data-index="' + i + '">' + statusOpts + '</select></td>' +
-      '<td>' + lead.date + '</td>' +
-      '<td><button class="del-btn" data-index="' + i + '">×</button></td>' +
-      '</tr>';
+
+  const table = el("table");
+  const thead = el("thead");
+  const hrow = el("tr");
+  ["String", "Post", "Poster Title", "Score", "Status", "Date", ""].forEach(function(h) {
+    hrow.appendChild(el("th", {}, h));
   });
-  view.innerHTML = '<table><thead><tr><th>String</th><th>Post</th><th>Poster Title</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  const tbody = el("tbody");
+  leads.forEach(function(lead, i) {
+    const tr = el("tr");
+
+    // String
+    tr.appendChild(el("td", {}, getStringLabel(lead.stringId)));
+
+    // Post URL
+    const urlTd = el("td");
+    if (lead.url) {
+      const a = el("a", { class: "url-link", href: lead.url, target: "_blank", rel: "noopener" }, "View ↗");
+      urlTd.appendChild(a);
+    } else {
+      urlTd.textContent = "—";
+    }
+    tr.appendChild(urlTd);
+
+    // Poster title
+    tr.appendChild(el("td", {}, lead.posterTitle || "—"));
+
+    // Score badge
+    const scoreTd = el("td");
+    const badge = el("span", { class: "score-badge " + (Number(lead.score) >= CONFIG.qualifiedThreshold ? "qualified" : "skip") }, lead.score);
+    scoreTd.appendChild(badge);
+    tr.appendChild(scoreTd);
+
+    // Status select
+    const statusTd = el("td");
+    const sel = el("select", { class: "status-select", "data-index": String(i) });
+    CONFIG.statuses.forEach(function(s) {
+      const opt = el("option", { value: s }, s);
+      if (lead.status === s) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    statusTd.appendChild(sel);
+    tr.appendChild(statusTd);
+
+    // Date
+    tr.appendChild(el("td", {}, lead.date));
+
+    // Delete button
+    const delTd = el("td");
+    const btn = el("button", { class: "del-btn", "data-index": String(i) }, "×");
+    delTd.appendChild(btn);
+    tr.appendChild(delTd);
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  view.appendChild(table);
 }
 
 function renderReview() {
   const view = document.getElementById("review-view");
+  while (view.firstChild) view.removeChild(view.firstChild);
+
   const byString = {};
   CONFIG.strings.forEach(function(s) { byString[s.id] = { label: s.label, tier: s.tier, hits: 0, qualified: 0 }; });
   leads.forEach(function(lead) {
@@ -80,22 +137,53 @@ function renderReview() {
       if (Number(lead.score) >= CONFIG.qualifiedThreshold) byString[lead.stringId].qualified++;
     }
   });
+
   const rows = Object.entries(byString).filter(function(e) { return e[1].hits > 0; })
     .sort(function(a, b) { return b[1].hits - a[1].hits; });
-  if (rows.length === 0) { view.innerHTML = '<p class="empty">No data yet.</p>'; return; }
-  let html = '<table class="review-table"><thead><tr><th>#</th><th>String</th><th>Tier</th><th>Hits</th><th>Qualified</th><th>ICP %</th><th>Day 5 verdict</th></tr></thead><tbody>';
+
+  if (rows.length === 0) {
+    view.appendChild(el("p", { class: "empty" }, "No data yet."));
+    return;
+  }
+
+  const table = el("table", { class: "review-table" });
+  const thead = el("thead");
+  const hrow = el("tr");
+  ["#", "String", "Tier", "Hits", "Qualified", "ICP %", "Day 5 verdict"].forEach(function(h) {
+    hrow.appendChild(el("th", {}, h));
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  const tbody = el("tbody");
   rows.forEach(function(e) {
     const id = e[0], d = e[1];
     const pct = d.hits > 0 ? Math.round((d.qualified / d.hits) * 100) : 0;
-    const verdict = d.hits >= 3 && pct < 60 ? '<span class="kill-flag">Kill / replace</span>'
-      : d.hits >= 3 && pct >= 60 ? '<span class="ok-flag">Keep</span>'
-      : '<span style="color:#aaa;font-size:11px">Need more data</span>';
-    html += '<tr><td>' + id + '</td><td>' + d.label + '</td><td>T' + d.tier + '</td><td>' + d.hits + '</td><td>' + d.qualified + '</td><td>' + pct + '%</td><td>' + verdict + '</td></tr>';
+    const tr = el("tr");
+    tr.appendChild(el("td", {}, id));
+    tr.appendChild(el("td", {}, d.label));
+    tr.appendChild(el("td", {}, "T" + d.tier));
+    tr.appendChild(el("td", {}, String(d.hits)));
+    tr.appendChild(el("td", {}, String(d.qualified)));
+    tr.appendChild(el("td", {}, pct + "%"));
+    const verdictTd = el("td");
+    if (d.hits >= 3 && pct < 60) {
+      verdictTd.appendChild(el("span", { class: "kill-flag" }, "Kill / replace"));
+    } else if (d.hits >= 3 && pct >= 60) {
+      verdictTd.appendChild(el("span", { class: "ok-flag" }, "Keep"));
+    } else {
+      const s = el("span", { style: "color:#aaa;font-size:11px" }, "Need more data");
+      verdictTd.appendChild(s);
+    }
+    tr.appendChild(verdictTd);
+    tbody.appendChild(tr);
   });
-  view.innerHTML = html + '</tbody></table>';
+
+  table.appendChild(tbody);
+  view.appendChild(table);
 }
 
-// Event delegation — no inline handlers needed
+// Event delegation — no inline handlers
 document.addEventListener("change", function(e) {
   if (e.target.classList.contains("status-select")) {
     updateLead(Number(e.target.dataset.index), { status: e.target.value });
@@ -149,12 +237,10 @@ document.getElementById("export-btn").addEventListener("click", function() {
   a.click();
 });
 
-// Populate string dropdown
+// Populate string dropdown on load
 const stringSelect = document.getElementById("new-string-id");
 CONFIG.strings.forEach(function(s) {
-  const opt = document.createElement("option");
-  opt.value = s.id;
-  opt.textContent = "#" + s.id + " — " + s.label;
+  const opt = el("option", { value: String(s.id) }, "#" + s.id + " — " + s.label);
   stringSelect.appendChild(opt);
 });
 
