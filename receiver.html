@@ -15,6 +15,13 @@
              origin.endsWith(".linkedin.com");
     }
 
+    // When another tab/iframe on this origin writes localStorage, notify our parent
+    window.addEventListener("storage", function(event) {
+      if (event.key === STORAGE_KEY) {
+        window.parent.postMessage({ action: "leads_updated" }, "*");
+      }
+    });
+
     window.addEventListener("message", function(event) {
       if (!isAllowedOrigin(event.origin)) {
         console.warn("Rejected postMessage from:", event.origin);

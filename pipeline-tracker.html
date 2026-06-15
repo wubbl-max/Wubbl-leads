@@ -111,7 +111,9 @@
       const d = event.data;
       if (!d) return;
 
-      if (d.action === "leads_data") {
+      if (d.action === "leads_updated") {
+        fetchLeads();
+      } else if (d.action === "leads_data") {
         leads = d.leads || [];
         renderPipeline();
         renderReview();
