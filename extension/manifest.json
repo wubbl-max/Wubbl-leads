@@ -17,7 +17,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["pipeline-tracker.html", "config.js"],
+      "resources": ["pipeline-tracker.html", "pipeline-tracker.js", "config.js"],
       "matches": ["<all_urls>"]
     }
   ],
