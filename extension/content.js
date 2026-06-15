@@ -271,14 +271,23 @@
         date: new Date().toISOString().slice(0, 10)
       };
       sv.disabled = true; sv.textContent = 'Saving…';
-      chrome.runtime.sendMessage({ action: 'save_lead', lead: lead }, function(res) {
-        if (res && res.success) {
-          mo.innerHTML = '<div style="text-align:center;padding:20px 0"><div style="font-size:48px;color:#1a7f37;margin-bottom:12px">✓</div><div style="font-size:16px;font-weight:700;color:#1a7f37">Saved!</div><div style="font-size:12px;color:#57606a;margin-top:6px">Click the Wubbl icon to review.</div></div>';
+      var PIPELINE_KEY = 'linkedin_pipeline_v1';
+      chrome.storage.local.get([PIPELINE_KEY], function(result) {
+        var leads = result[PIPELINE_KEY] || [];
+        leads.unshift(lead);
+        chrome.storage.local.set({ [PIPELINE_KEY]: leads }, function() {
+          if (chrome.runtime.lastError) {
+            alert('Save failed: ' + chrome.runtime.lastError.message);
+            sv.disabled = false; sv.textContent = 'Save to Pipeline';
+            return;
+          }
+          var tick = document.createElement('div');
+          tick.style.cssText = 'text-align:center;padding:20px 0';
+          tick.innerHTML = '<div style="font-size:48px;color:#1a7f37;margin-bottom:12px">✓</div><div style="font-size:16px;font-weight:700;color:#1a7f37">Saved!</div><div style="font-size:12px;color:#57606a;margin-top:6px">Click the Wubbl icon to review.</div>';
+          mo.textContent = '';
+          mo.appendChild(tick);
           setTimeout(function() { if (document.body.contains(ov)) document.body.removeChild(ov); }, 1600);
-        } else {
-          alert('Save failed. Try reloading the extension.');
-          sv.disabled = false; sv.textContent = 'Save to Pipeline';
-        }
+        });
       });
     };
 
